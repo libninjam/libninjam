@@ -50,9 +50,9 @@
 
 #include <jack/jack.h>
 
-#include "../WDL/pcmfmtcvt.h"
+#include <WDL/pcmfmtcvt.h>
 
-#include "../WDL/ptrlist.h"
+#include <WDL/ptrlist.h>
 #include "njclient.h"
 
 #include "audiostream.h"
@@ -192,7 +192,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     float bpm = njc->GetActualBPM();
     int posi, len;
     posi = njc->GetSessionPosition() * m_srate / 1000;
-    len = njc->GetBPI() * m_srate * 60 / bpm;
+    len = (int)(njc->GetBPI() * m_srate * 60 / bpm);
 
     // sync jack_transport_frame to njframe
     

@@ -28,8 +28,8 @@
 #include <stdarg.h>
 #include "njclient.h"
 #include "mpb.h"
-#include "../WDL/pcmfmtcvt.h"
-#include "../WDL/wavwrite.h"
+#include <WDL/pcmfmtcvt.h>
+#include <WDL/wavwrite.h>
 
 
 
@@ -37,7 +37,7 @@
 #define VorbisEncoder I_NJEncoder 
 #define VorbisDecoder I_NJDecoder 
 #define NJ_ENCODER_FMT_TYPE MAKE_NJ_FOURCC('O','G','G','v')
-#include "../WDL/vorbisencdec.h"
+#include <WDL/vorbisencdec.h>
 #undef VorbisEncoder
 #undef VorbisDecoder
 

@@ -52,9 +52,9 @@
 #include <sys/ioctl.h>
 #include <sys/soundcard.h>
 
-#include "../WDL/pcmfmtcvt.h"
+#include <WDL/pcmfmtcvt.h>
 
-#include "../WDL/ptrlist.h"
+#include <WDL/ptrlist.h>
 #include "audiostream.h"
 
 static void audiostream_onunder() { }
