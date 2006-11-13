@@ -67,7 +67,7 @@ class audioStreamer_CoreAudio  : public audioStreamer
 #include <sys/stat.h>
 #include <pthread.h>
 
-#include "../WDL/queue.h"
+#include <WDL/queue.h>
 
 static int outchtab[2]={0,1};
 

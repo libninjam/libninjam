@@ -53,7 +53,7 @@
 
 #include "vorbis/vorbisenc.h"
 #include "vorbis/codec.h"
-#include "../WDL/queue.h"
+#include "queue.h"
 
 class VorbisDecoder
 {
