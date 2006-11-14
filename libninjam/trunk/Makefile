@@ -39,30 +39,42 @@ ifdef MAC
 CLIENT_OBJS += ninjam/audiostream_mac.o
 else
 CLIENT_OBJS += ninjam/audiostream_jack.o
+LFLAGS += -ljack
 endif
 CLIENT_OBJS += ninjam/njmisc.o
 
 CXXFLAGS = $(CFLAGS)
 
-default: libninjam-common.so libninjam-client.so
+default: libninjam-common.so libninjam-client.so \
+	 libninjam-common.a libninjam-client.a
 
 libninjam-common.so: $(COMMON_OBJS)
 	$(CXX) -shared $(CXXFLAGS) -o libninjam-common.so $(COMMON_OBJS)
 
 libninjam-client.so: $(CLIENT_OBJS) libninjam-common.so
 	$(CXX) -shared $(CXXFLAGS) -o libninjam-client.so $(CLIENT_OBJS) \
-	$(LFLAGS) -ljack -logg -lvorbis -lvorbisenc -L. -lninjam-common
+	$(LFLAGS) -logg -lvorbis -lvorbisenc -L. -lninjam-common
+
+libninjam-common.a: $(COMMON_OBJS)
+	ar cr libninjam-common.a $(COMMON_OBJS)
+
+libninjam-client.a: $(CLIENT_OBJS) libninjam-common.a
+	ar cr libninjam-client.a $(CLIENT_OBJS) libninjam-common.a
 
 clean:
-	-rm $(COMMON_OBJS) $(CLIENT_OBJS) libninjam-common.so libninjam-client.so
+	-rm $(COMMON_OBJS) $(CLIENT_OBJS) \
+	libninjam-common.so libninjam-client.so \
+	libninjam-common.a libninjam-client.a
 
-install: libninjam-common.so libninjam-client.so
+install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-client.a
 	mkdir -p $(PREFIX)/include/libninjam/ninjam
 	mkdir -p $(PREFIX)/include/libninjam/WDL
 	mkdir -p $(PREFIX)/include/libninjam/WDL/jnetlib
 	mkdir -p $(PREFIX)/lib
-	install -m 644 ninjam/*.h $(PREFIX)/include/libninjam/ninjam
-	install -m 644 WDL/*.h $(PREFIX)/include/libninjam/WDL
-	install -m 644 WDL/jnetlib/*.h $(PREFIX)/include/libninjam/WDL/jnetlib
-	install *.so $(PREFIX)/lib
-
+	mkdir -p $(PREFIX)/lib/pkgconfig
+	install -m 644 ninjam/*.h $(PREFIX)/include/libninjam/ninjam/
+	install -m 644 WDL/*.h $(PREFIX)/include/libninjam/WDL/
+	install -m 644 WDL/jnetlib/*.h $(PREFIX)/include/libninjam/WDL/jnetlib/
+	install *.so $(PREFIX)/lib/
+	install -m 755 *.a $(PREFIX)/lib/
+	install -m 644 ninjam.pc $(PREFIX)/lib/pkgconfig/
