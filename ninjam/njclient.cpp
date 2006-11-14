@@ -620,7 +620,7 @@ void NJClient::Disconnect()
   _reinit();
 }
 
-void NJClient::Connect(char *host, char *user, char *pass)
+void NJClient::Connect(const char *host, const char *user, const char *pass)
 {
   Disconnect();
 
@@ -1238,7 +1238,7 @@ float NJClient::GetOutputPeak()
   return (float)output_peaklevel;
 }
 
-void NJClient::ChatMessage_Send(char *parm1, char *parm2, char *parm3, char *parm4, char *parm5)
+void NJClient::ChatMessage_Send(const char *parm1, const char *parm2, const char *parm3, const char *parm4, const char *parm5)
 {
   if (m_netcon)
   {

@@ -273,7 +273,7 @@ class mpb_chat_message
     int parse(Net_Message *msg); // return 0 on success
     Net_Message *build();
 
-    char *parms[5];
+    const char *parms[5];
 
     // currently defined client->server commands:
     // MSG <text>   - sends a message to everybody
