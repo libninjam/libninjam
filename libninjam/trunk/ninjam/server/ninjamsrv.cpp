@@ -39,17 +39,17 @@
 #include <signal.h>
 #include <stdarg.h>
 
-#include "../../WDL/jnetlib/jnetlib.h"
-#include "../../WDL/jnetlib/httpget.h"
-#include "../netmsg.h"
-#include "../mpb.h"
+#include <WDL/jnetlib/jnetlib.h>
+#include <WDL/jnetlib/httpget.h>
+#include <ninjam/netmsg.h>
+#include <ninjam/mpb.h>
 #include "usercon.h"
 
-#include "../../WDL/rng.h"
-#include "../../WDL/sha.h"
-#include "../../WDL/lineparse.h"
-#include "../../WDL/ptrlist.h"
-#include "../../WDL/string.h"
+#include <WDL/rng.h>
+#include <WDL/sha.h>
+#include <WDL/lineparse.h>
+#include <WDL/ptrlist.h>
+#include <WDL/string.h>
 
 #define VERSION "v0.02"
 

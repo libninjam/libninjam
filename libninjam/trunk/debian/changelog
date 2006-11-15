@@ -1,6 +1,9 @@
 ninjam (0.02-1) unstable; urgency=low
 
   * Initial release of ninjam library
+  * client and server build modified to use that library
+  * patched version of cursesclient using jack
+  * some parameters changed from char* to const char*
 
- -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 13 Nov 2006 17:07:01 +0100
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 15 Nov 2006 00:57:01 +0100
 
