@@ -35,10 +35,10 @@
 #include <ctype.h>
 
 #include "usercon.h"
-#include "../mpb.h"
+#include <ninjam/mpb.h>
 
-#include "../../WDL/rng.h"
-#include "../../WDL/sha.h"
+#include <WDL/rng.h>
+#include <WDL/sha.h>
 
 
 #ifdef _WIN32
@@ -1030,7 +1030,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
         else
         {
           // set topic, notify everybody of topic change
-          char *p=msg->parms[1]+6;
+          const char *p=msg->parms[1]+6;
           while (*p == ' ') p++;
           if (*p)
           {
@@ -1057,7 +1057,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
         else
         {
           // set topic, notify everybody of topic change
-          char *p=msg->parms[1]+5;
+          const char *p=msg->parms[1]+5;
           while (*p == ' ') p++;
           if (*p)
           {
@@ -1120,7 +1120,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
         {
           int isbpm=tolower(msg->parms[1][2])=='m';
 
-          char *p=msg->parms[1]+4;
+          const char *p=msg->parms[1]+4;
           while (*p == ' ') p++;
           int v=atoi(p);
           if (isbpm && (v < 20 || v > 400))

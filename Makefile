@@ -47,6 +47,8 @@ CXXFLAGS = $(CFLAGS)
 
 default: libninjam-common.so libninjam-client.so \
 	 libninjam-common.a libninjam-client.a
+	(cd ninjam/cursesclient && make)
+	(cd ninjam/server && make)
 
 libninjam-common.so: $(COMMON_OBJS)
 	$(CXX) -shared $(CXXFLAGS) -o libninjam-common.so $(COMMON_OBJS)
@@ -65,6 +67,8 @@ clean:
 	-rm $(COMMON_OBJS) $(CLIENT_OBJS) \
 	libninjam-common.so libninjam-client.so \
 	libninjam-common.a libninjam-client.a
+	(cd ninjam/cursesclient && make clean)
+	(cd ninjam/server && make clean)
 
 install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-client.a
 	mkdir -p $(PREFIX)/include/libninjam/ninjam
@@ -78,3 +82,5 @@ install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-cl
 	install *.so $(PREFIX)/lib/
 	install -m 755 *.a $(PREFIX)/lib/
 	install -m 644 ninjam.pc $(PREFIX)/lib/pkgconfig/
+	(cd ninjam/cursesclient && make install)
+	(cd ninjam/server && make install)
