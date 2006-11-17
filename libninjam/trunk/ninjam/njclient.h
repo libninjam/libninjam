@@ -154,7 +154,7 @@ public:
   float GetLocalChannelPeak(int ch);
   void SetLocalChannelProcessor(int ch, void (*cbf)(float *, int ns, void *), void *inst);
   void GetLocalChannelProcessor(int ch, void **func, void **inst);
-  void SetLocalChannelInfo(int ch, char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast);
+  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast);
   char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast);
   void SetLocalChannelMonitoring(int ch, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo);
   int GetLocalChannelMonitoring(int ch, float *vol, float *pan, bool *mute, bool *solo); // 0 on success
