@@ -1,3 +1,10 @@
+ninjam (0.02-5) unstable; urgency=low
+
+  * make number of in-/output channels and client name of the
+    jack driver variable
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 18 Nov 2006 18:41:59 +0100
+
 ninjam (0.02-4) unstable; urgency=low
 
   * reenabled alsa driver in addition to the jack driver
