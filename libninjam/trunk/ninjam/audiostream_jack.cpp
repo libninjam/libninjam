@@ -68,8 +68,8 @@ class audioStreamer_JACK : public audioStreamer
 {
     public:
 	audioStreamer_JACK(const char* clientName,
-			   unsigned nInputChannels,
-			   unsigned nOutputChannels,
+			   int nInputChannels,
+			   int nOutputChannels,
 			   SPLPROC proc);
 	~audioStreamer_JACK();
 
@@ -117,8 +117,8 @@ void jack_timebase_cb(jack_transport_state_t state,
 
 //////////////// JACK driver
 audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
-				       unsigned nInputChannels,
-				       unsigned nOutputChannels,
+				       int nInputChannels,
+				       int nOutputChannels,
 				       SPLPROC proc)
 { 
 
@@ -289,8 +289,8 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 }
 
 audioStreamer *create_audioStreamer_JACK(const char* clientName,
-					 unsigned nInputChannels,
-					 unsigned nOutputChannels,
+					 int nInputChannels,
+					 int nOutputChannels,
 					 SPLPROC proc,
 					 NJClient *njclient)
 {
