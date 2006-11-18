@@ -163,7 +163,8 @@ audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
 
 audioStreamer_JACK::~audioStreamer_JACK() 
 {
-    jack_deactivate( client );
+  // jack_deactivate(client);
+    jack_client_close(client);
     sleep(1);
     delete _in;
     delete _inports;
