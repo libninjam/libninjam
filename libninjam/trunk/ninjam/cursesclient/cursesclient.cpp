@@ -1098,7 +1098,7 @@ int main(int argc, char **argv)
 #ifdef _MAC
     g_audio=create_audioStreamer_CoreAudio(&dev_name_in,48000,2,16,audiostream_onsamples);
 #else
-    g_audio=create_audioStreamer_JACK(dev_name_in,audiostream_onsamples,g_client);
+    g_audio=create_audioStreamer_JACK("ninjam", 4, 4, audiostream_onsamples,g_client);
 #endif
   }
 #endif
