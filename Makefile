@@ -39,7 +39,8 @@ ifdef MAC
 CLIENT_OBJS += ninjam/audiostream_mac.o
 else
 CLIENT_OBJS += ninjam/audiostream_jack.o
-LFLAGS += -ljack
+CLIENT_OBJS += ninjam/audiostream_alsa.o
+LFLAGS += -ljack -lasound
 endif
 CLIENT_OBJS += ninjam/njmisc.o
 
