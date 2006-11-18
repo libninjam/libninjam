@@ -65,7 +65,11 @@ audioStreamer *create_audioStreamer_DS(int srate, int bps, GUID devs[2], int *nb
 #ifdef _MAC
 audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, int bps, SPLPROC proc);
 #else
-audioStreamer *create_audioStreamer_JACK(char *cfg, SPLPROC proc, NJClient *njclient );
+audioStreamer *create_audioStreamer_JACK(const char* clientName,
+					 unsigned nInputChannels,
+					 unsigned nOutputChannels,
+					 SPLPROC proc,
+					 NJClient *njclient);
 audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
 #endif
 
