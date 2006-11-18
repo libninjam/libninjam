@@ -65,7 +65,7 @@ class WaveWriter
       m_nch=0;
     }
 
-    WaveWriter(char *filename, int bps, int nch, int srate, int allow_append=1) 
+    WaveWriter(const char *filename, int bps, int nch, int srate, int allow_append=1) 
     {
       m_fp=0;
       m_bps=0;
@@ -75,7 +75,7 @@ class WaveWriter
 
     }
 
-    int Open(char *filename, int bps, int nch, int srate, int allow_append=1)
+    int Open(const char *filename, int bps, int nch, int srate, int allow_append=1)
     {
       m_fp=0;
       if (allow_append)
