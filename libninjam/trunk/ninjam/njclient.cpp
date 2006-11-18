@@ -427,7 +427,7 @@ void NJClient::writeLog(char *fmt, ...)
 
 }
 
-void NJClient::SetLogFile(char *name)
+void NJClient::SetLogFile(const char *name)
 {
   m_log_cs.Enter();
   if (m_logFile) fclose(m_logFile);
@@ -1903,7 +1903,7 @@ void NJClient::NotifyServerOfChannelChange()
   }
 }
 
-void NJClient::SetWorkDir(char *path)
+void NJClient::SetWorkDir(const char *path)
 {
   m_workdir.Set(path?path:"");
 

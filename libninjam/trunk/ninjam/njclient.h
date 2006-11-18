@@ -126,7 +126,7 @@ public:
   enum { NJC_STATUS_DISCONNECTED=-3,NJC_STATUS_INVALIDAUTH=-2, NJC_STATUS_CANTCONNECT=-1, NJC_STATUS_OK=0, NJC_STATUS_PRECONNECT};
   int GetStatus();
 
-  void SetWorkDir(char *path);
+  void SetWorkDir(const char *path);
   char *GetWorkDir() { return m_workdir.Get(); }
 
   char *GetUserName() { return m_user.Get(); }
@@ -162,7 +162,7 @@ public:
 
   int IsASoloActive() { return m_issoloactive; }
 
-  void SetLogFile(char *name=NULL);
+  void SetLogFile(const char *name=NULL);
 
   void SetOggOutFile(FILE *fp, int srate, int nch, int bitrate=128);
   WaveWriter *waveWrite;
