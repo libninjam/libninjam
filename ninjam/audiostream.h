@@ -68,7 +68,6 @@ audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, in
 audioStreamer *create_audioStreamer_JACK(const char* clientName,
 					 int nInputChannels,
 					 int nOutputChannels,
-					 int bps,
 					 SPLPROC proc,
 					 NJClient *njclient);
 audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
