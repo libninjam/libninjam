@@ -32,6 +32,7 @@
 #include <WDL/wavwrite.h>
 
 #define MIN(a,b)      ((a) < (b) ? (a) : (b))
+#define MAX(a,b)      ((a) > (b) ? (a) : (b))
 
 // todo: make an interface base class for vorbis enc/dec
 #define VorbisEncoder I_NJEncoder 
@@ -1382,7 +1383,7 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
         if (m_issoloactive) muteflag = !(user->solomask & (1<<ch));
         else muteflag=(user->mutedmask & (1<<ch)) || user->muted;
 	
-	int outch = MIN(user->channels[ch].outch, outnch-1 );
+	int outch = MAX(0, MIN(user->channels[ch].outch, outnch-1 ));
 	int nch = ( outch < ( outnch-1 ) ) ? 2 : 1;
 
         if (user->channels[ch].ds)
@@ -1450,16 +1451,18 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     int metrolen=srate / 100;
     double sc=6000.0/(double)srate;
     int x;
-    int um=config_metronome>0.0001f;
-    double vol1=config_metronome_mute?0.0:config_metronome,vol2=vol1;
-    int ch = MIN( config_metronome_channel, outnch-1 );
-    float *ptr1=outbuf[ch]+offset;
+    int ch = MAX(0, MIN(config_metronome_channel, outnch-1));
+    int um = (config_metronome>0.0001f)&&(!config_metronome_mute);
+    double vol1=config_metronome,vol2=vol1;
+    float *ptr1=NULL;
     float *ptr2=NULL;
-    if ( ch < (outnch-1) )
-    {
+    if (um) {
+      ptr1 = outbuf[ch]+offset;
+      if (ch < (outnch-1)) {
         ptr2=outbuf[ch+1]+offset;
         if (config_metronome_pan > 0.0f) vol1 *= 1.0f-config_metronome_pan;
         else if (config_metronome_pan< 0.0f) vol2 *= 1.0f+config_metronome_pan;
+      }
     }
     for (x = 0; x < len; x ++)
     {
