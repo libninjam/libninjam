@@ -31,7 +31,7 @@
 #include <WDL/pcmfmtcvt.h>
 #include <WDL/wavwrite.h>
 
-
+#define MIN(a,b)      ((a) < (b) ? (a) : (b))
 
 // todo: make an interface base class for vorbis enc/dec
 #define VorbisEncoder I_NJEncoder 
@@ -90,6 +90,7 @@ class RemoteUser_Channel
     ~RemoteUser_Channel();
 
     float volume, pan;
+    int outch;
 
     WDL_String name;
 
@@ -345,6 +346,7 @@ NJClient::NJClient()
   config_metronome=0.5f;
   config_metronome_pan=0.0f;
   config_metronome_mute=false;
+  config_metronome_channel=0;
   config_debug_level=0;
   config_mastervolume=1.0f;
   config_masterpan=0.0f;
@@ -1379,11 +1381,14 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
         bool muteflag;
         if (m_issoloactive) muteflag = !(user->solomask & (1<<ch));
         else muteflag=(user->mutedmask & (1<<ch)) || user->muted;
+	
+	int outch = MIN(user->channels[ch].outch, outnch-1 );
+	int nch = ( outch < ( outnch-1 ) ) ? 2 : 1;
 
         if (user->channels[ch].ds)
           mixInChannel(muteflag,
             user->volume*user->channels[ch].volume,lpan,
-              user->channels[ch].ds,outbuf,len,srate,outnch,offset,decay);
+              user->channels[ch].ds,outbuf+outch,len,srate,nch,offset,decay);
       }
     }
     m_users_cs.Leave();
@@ -1447,11 +1452,12 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     int x;
     int um=config_metronome>0.0001f;
     double vol1=config_metronome_mute?0.0:config_metronome,vol2=vol1;
-    float *ptr1=outbuf[0]+offset;
+    int ch = MIN( config_metronome_channel, outnch-1 );
+    float *ptr1=outbuf[ch]+offset;
     float *ptr2=NULL;
-    if (outnch > 1)
+    if ( ch < (outnch-1) )
     {
-        ptr2=outbuf[1]+offset;
+        ptr2=outbuf[ch+1]+offset;
         if (config_metronome_pan > 0.0f) vol1 *= 1.0f-config_metronome_pan;
         else if (config_metronome_pan< 0.0f) vol2 *= 1.0f+config_metronome_pan;
     }
@@ -1655,7 +1661,7 @@ int NJClient::EnumUserChannels(int useridx, int i)
   return -1;
 }
 
-char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo)
+char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo, int *outch)
 {
   if (useridx<0 || useridx>=m_remoteusers.GetSize()||channelidx<0||channelidx>=MAX_USER_CHANNELS) return NULL;
   RemoteUser_Channel *p=m_remoteusers.Get(useridx)->channels + channelidx;
@@ -1667,13 +1673,14 @@ char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, floa
   if (pan) *pan=p->pan;
   if (mute) *mute=!!(user->mutedmask & (1<<channelidx));
   if (solo) *solo=!!(user->solomask & (1<<channelidx));
-  
+  if (outch) *outch=p->outch;
+
   return p->name.Get();
 }
 
 
 void NJClient::SetUserChannelState(int useridx, int channelidx, 
-                                   bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo)
+                                   bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo, bool setoutch, int outch)
 {
   if (useridx<0 || useridx>=m_remoteusers.GetSize()||channelidx<0||channelidx>=MAX_USER_CHANNELS) return;
   RemoteUser *user=m_remoteusers.Get(useridx);
@@ -1710,6 +1717,7 @@ void NJClient::SetUserChannelState(int useridx, int channelidx,
   }
   if (setvol) p->volume=vol;
   if (setpan) p->pan=pan;
+  if (setoutch) p->outch=outch;
   if (setmute) 
   {
     if (mute)
@@ -1934,7 +1942,7 @@ void NJClient::SetWorkDir(const char *path)
 }
 
 
-RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), ds(NULL)
+RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), ds(NULL)
 {
   memset(next_ds,0,sizeof(next_ds));
 }
