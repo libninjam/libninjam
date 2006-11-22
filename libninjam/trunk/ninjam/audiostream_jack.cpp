@@ -72,7 +72,6 @@ class audioStreamer_JACK : public audioStreamer
 	audioStreamer_JACK(const char* clientName,
 			   int nInputChannels,
 			   int nOutputChannels,
-			   int bps,
 			   SPLPROC proc);
 	~audioStreamer_JACK();
 
@@ -126,7 +125,6 @@ void jack_timebase_cb(jack_transport_state_t state,
 audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
 				       int nInputChannels,
 				       int nOutputChannels,
-				       int bps,
 				       SPLPROC proc)
 { 
 
@@ -166,7 +164,7 @@ audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
     m_innch = nInputChannels;
     m_outnch = nOutputChannels;
     m_srate = jack_get_sample_rate( client );
-    m_bps = bps;
+    m_bps = 32;
 }
 
 audioStreamer_JACK::~audioStreamer_JACK() 
@@ -340,14 +338,12 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 audioStreamer *create_audioStreamer_JACK(const char* clientName,
 					 int nInputChannels,
 					 int nOutputChannels,
-					 int bps,
 					 SPLPROC proc,
 					 NJClient *njclient)
 {
   audioStreamer_JACK *au = new audioStreamer_JACK(clientName,
 						  nInputChannels,
 						  nOutputChannels,
-						  bps,
 						  proc);
   au->set_njclient(njclient);
   return au;
