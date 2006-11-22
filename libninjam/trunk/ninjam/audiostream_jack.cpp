@@ -53,6 +53,8 @@
 #include <WDL/pcmfmtcvt.h>
 
 #include <WDL/ptrlist.h>
+#include <WDL/mutex.h>
+
 #include "njclient.h"
 
 #include "audiostream.h"
@@ -70,6 +72,7 @@ class audioStreamer_JACK : public audioStreamer
 	audioStreamer_JACK(const char* clientName,
 			   int nInputChannels,
 			   int nOutputChannels,
+			   int bps,
 			   SPLPROC proc);
 	~audioStreamer_JACK();
 
@@ -94,8 +97,12 @@ private:
   char _channelname[20];
   SPLPROC splproc;
   NJClient *njc;
+  WDL_Mutex _process_lock;
+
 public:
   void set_njclient( NJClient *njclient ) { njc = njclient; }
+  void addInputChannel();
+  void addOutputChannel();
 };
 
 
@@ -119,6 +126,7 @@ void jack_timebase_cb(jack_transport_state_t state,
 audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
 				       int nInputChannels,
 				       int nOutputChannels,
+				       int bps,
 				       SPLPROC proc)
 { 
 
@@ -158,7 +166,7 @@ audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
     m_innch = nInputChannels;
     m_outnch = nOutputChannels;
     m_srate = jack_get_sample_rate( client );
-    m_bps = 32;
+    m_bps = bps;
 }
 
 audioStreamer_JACK::~audioStreamer_JACK() 
@@ -166,14 +174,43 @@ audioStreamer_JACK::~audioStreamer_JACK()
   // jack_deactivate(client);
     jack_client_close(client);
     sleep(1);
-    delete _in;
-    delete _inports;
-    delete _out;
-    delete _outports;
+    delete[] _in;
+    delete[] _inports;
+    delete[] _out;
+    delete[] _outports;
+}
+
+void audioStreamer_JACK::addInputChannel()
+{
+  _process_lock.Enter();
+  delete[] _in;
+  delete[] _inports;
+  m_innch++;
+  _in = new jack_port_t*[m_innch];
+  _inports = new float*[m_innch];
+  char name[10];
+  snprintf(name, sizeof(name), "in%d", m_innch);
+  _in[m_innch-1] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
+  _process_lock.Leave();
+}
+
+void audioStreamer_JACK::addOutputChannel()
+{
+  _process_lock.Enter();
+  delete[] _out;
+  delete[] _outports;
+  m_outnch++;
+  _out = new jack_port_t*[m_outnch];
+  _outports = new float*[m_outnch];
+  char name[10];
+  snprintf(name, sizeof(name), "out%d", m_outnch);
+  _out[m_outnch-1] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  _process_lock.Leave();
 }
 
 int
 audioStreamer_JACK::process( jack_nframes_t nframes ) {
+  _process_lock.Enter();
   for (unsigned i=0; i<m_innch; i++) {
     _inports[i] = (float *) jack_port_get_buffer(_in[i], nframes);
   }
@@ -187,6 +224,7 @@ audioStreamer_JACK::process( jack_nframes_t nframes ) {
 	  m_outnch,
 	  nframes,
 	  jack_get_sample_rate(client));
+  _process_lock.Leave();
   return 0;
 }
 
@@ -197,33 +235,44 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     static double jack_tick;
     static jack_nframes_t last_frame;
     static jack_nframes_t current_frame;
+    jack_position_t cur_pos;
     static jack_transport_state_t state_current;
     static jack_transport_state_t state_last;
+    static int locating = 0;
 
+#if 0
     if( state != JackTransportRolling )
     {
-	jack_transport_start( client );
+      jack_transport_locate( client, 0 );
+      jack_transport_start( client );
     }
+#endif
 
     if( !njc ) return;
 
-    float bpm = njc->GetActualBPM();
     int posi, len;
-    posi = njc->GetSessionPosition() * m_srate / 1000;
-    len = (int)(njc->GetBPI() * m_srate * 60 / bpm);
+    njc->GetPosition(&posi,&len);
+    float bpm = njc->GetActualBPM();
+
+    //posi = njc->GetSessionPosition() * m_srate / 1000;
+    //len = (int)(njc->GetBPI() * m_srate * 60 / bpm);
 
     // sync jack_transport_frame to njframe
     
-    current_frame = jack_get_current_transport_frame( client );
-    
+    //current_frame = jack_get_current_transport_frame( client );
+    jack_transport_query(client, &cur_pos);
+    current_frame = cur_pos.frame;
+
     // FIXME: This will not work right, if there are slow-sync clients....
 
-    int diff =abs(current_frame % len) - (posi %len);
+    int diff = abs(current_frame % len) - (posi % len);
 
     if( diff > nframes ) {
+#if 1
 	jack_transport_locate( client, (current_frame / len) * len + (posi%len) + 2*nframes );
 	
 	//printf( "no:  current= %d diff = %d\n", (current_frame % len) -  (posi % len), diff );
+#endif
     }
 
     // taken from seq24-0.7.0 perform.cpp
@@ -291,12 +340,14 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 audioStreamer *create_audioStreamer_JACK(const char* clientName,
 					 int nInputChannels,
 					 int nOutputChannels,
+					 int bps,
 					 SPLPROC proc,
 					 NJClient *njclient)
 {
   audioStreamer_JACK *au = new audioStreamer_JACK(clientName,
 						  nInputChannels,
 						  nOutputChannels,
+						  bps,
 						  proc);
   au->set_njclient(njclient);
   return au;
