@@ -79,14 +79,25 @@ class audioStreamer_JACK : public audioStreamer
 	void timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos );
 
 
-	const char *GetChannelName(int idx)
-	{
-	  if ((idx >= 0)&&(idx < m_innch)) {
-	    snprintf(_channelname, sizeof(_channelname), "Channel %d", idx);
-	    return _channelname;
-	  } else
-	    return NULL;
-	}
+  const char *GetChannelName(int idx) {
+    return GetInputChannelName(idx);
+  }
+  
+  const char *GetInputChannelName(int idx)
+  {
+    if ((idx >= 0)&&(idx < m_innch)) {
+      return jack_port_short_name(_in[idx]);
+    } else
+      return NULL;
+  }
+  
+  const char *GetOutputChannelName(int idx)
+  {
+    if ((idx >= 0)&&(idx < m_outnch)) {
+      return jack_port_short_name(_out[idx]);
+    } else
+      return NULL;
+  }
 private:
   jack_client_t *client;
   jack_port_t **_in;
@@ -100,8 +111,8 @@ private:
 
 public:
   void set_njclient( NJClient *njclient ) { njc = njclient; }
-  void addInputChannel();
-  void addOutputChannel();
+  virtual bool addInputChannel();
+  virtual bool addOutputChannel();
 };
 
 
@@ -178,32 +189,60 @@ audioStreamer_JACK::~audioStreamer_JACK()
     delete[] _outports;
 }
 
-void audioStreamer_JACK::addInputChannel()
+bool audioStreamer_JACK::addInputChannel()
 {
-  _process_lock.Enter();
-  delete[] _in;
-  delete[] _inports;
-  m_innch++;
-  _in = new jack_port_t*[m_innch];
-  _inports = new float*[m_innch];
   char name[10];
-  snprintf(name, sizeof(name), "in%d", m_innch);
-  _in[m_innch-1] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
-  _process_lock.Leave();
+  snprintf(name, sizeof(name), "in%d", m_innch+1);
+  jack_port_t* port = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
+  if (port) {
+    jack_port_t** tmp = _in;
+    jack_port_t** tmp2 = new jack_port_t*[m_innch+1];
+    for (unsigned i=0; i < m_innch; i++)
+      tmp2[i] = tmp[i];
+    tmp2[m_innch] = port;
+    _process_lock.Enter();
+    _in = tmp2;
+    _process_lock.Leave();
+    delete[] tmp;
+    float **tmp3 = _inports;
+    float **tmp4 = new float*[m_innch+1];
+    _process_lock.Enter();
+    _inports = tmp4;
+    m_innch++;
+    _process_lock.Leave();
+    delete[] tmp3;
+    return true;
+  } else {
+    return false;
+  }
 }
 
-void audioStreamer_JACK::addOutputChannel()
+bool audioStreamer_JACK::addOutputChannel()
 {
-  _process_lock.Enter();
-  delete[] _out;
-  delete[] _outports;
-  m_outnch++;
-  _out = new jack_port_t*[m_outnch];
-  _outports = new float*[m_outnch];
   char name[10];
-  snprintf(name, sizeof(name), "out%d", m_outnch);
-  _out[m_outnch-1] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-  _process_lock.Leave();
+  snprintf(name, sizeof(name), "out%d", m_outnch+1);
+  jack_port_t* port = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  if (port) {
+    jack_port_t** tmp = _out;
+    jack_port_t** tmp2 = new jack_port_t*[m_outnch+1];
+    for (unsigned i=0; i < m_outnch; i++)
+      tmp2[i] = tmp[i];
+    tmp2[m_outnch] = port;
+    _process_lock.Enter();
+    _out = tmp2;
+    _process_lock.Leave();
+    delete[] tmp;
+    float **tmp3 = _outports;
+    float **tmp4 = new float*[m_outnch+1];
+    _process_lock.Enter();
+    _outports = tmp4;
+    m_outnch++;
+    _process_lock.Leave();
+    delete[] tmp3;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 int

@@ -3,7 +3,10 @@ ninjam (0.02-6) unstable; urgency=low
   * added jack transport fix from robin
   * added patch for multiple outputs from expertsleepers
   * fix problem with possibly negative output channel number
-
+  * make stereo channel output configurable
+  * add interface for adding audio channels and getting the names
+    from in- and output ports seperately
+	
  -- Tobias Gehrig <tobias@gehrignet.de>  Wed, 22 Nov 2006 03:58:24 +0100
 
 ninjam (0.02-5) unstable; urgency=low
