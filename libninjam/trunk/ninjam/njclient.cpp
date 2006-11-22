@@ -92,6 +92,7 @@ class RemoteUser_Channel
 
     float volume, pan;
     int outch;
+    bool stereoout;
 
     WDL_String name;
 
@@ -348,6 +349,7 @@ NJClient::NJClient()
   config_metronome_pan=0.0f;
   config_metronome_mute=false;
   config_metronome_channel=0;
+  config_metronome_stereoout = true;
   config_debug_level=0;
   config_mastervolume=1.0f;
   config_masterpan=0.0f;
@@ -1384,7 +1386,8 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
         else muteflag=(user->mutedmask & (1<<ch)) || user->muted;
 	
 	int outch = MAX(0, MIN(user->channels[ch].outch, outnch-1 ));
-	int nch = ( outch < ( outnch-1 ) ) ? 2 : 1;
+	int nch = ((user->channels[ch].stereoout)&&(outch < (outnch-1))) ? MIN(2, outnch) : 1;
+	muteflag |= (outch != user->channels[ch].outch);
 
         if (user->channels[ch].ds)
           mixInChannel(muteflag,
@@ -1419,7 +1422,7 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
       float vol1=config_mastermute?0.0f:config_mastervolume;
       float vol2=vol1;
       if (config_masterpan > 0.0f) vol1 *= 1.0f-config_masterpan;
-      else if (config_masterpan< 0.0f) vol2 *= 1.0f+config_masterpan;
+      else if (config_masterpan < 0.0f) vol2 *= 1.0f+config_masterpan;
 
       while (x--)
       {
@@ -1452,13 +1455,13 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     double sc=6000.0/(double)srate;
     int x;
     int ch = MAX(0, MIN(config_metronome_channel, outnch-1));
-    int um = (config_metronome>0.0001f)&&(!config_metronome_mute);
+    int um = (config_metronome>0.0001f)&&(!config_metronome_mute)&&(config_metronome_channel == ch);
     double vol1=config_metronome,vol2=vol1;
     float *ptr1=NULL;
     float *ptr2=NULL;
     if (um) {
       ptr1 = outbuf[ch]+offset;
-      if (ch < (outnch-1)) {
+      if ((config_metronome_stereoout)&&(ch < (outnch-1))&&(outnch > 1)) {
         ptr2=outbuf[ch+1]+offset;
         if (config_metronome_pan > 0.0f) vol1 *= 1.0f-config_metronome_pan;
         else if (config_metronome_pan< 0.0f) vol2 *= 1.0f+config_metronome_pan;
@@ -1664,7 +1667,7 @@ int NJClient::EnumUserChannels(int useridx, int i)
   return -1;
 }
 
-char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo, int *outch)
+char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo, int *outch, bool *stereoout)
 {
   if (useridx<0 || useridx>=m_remoteusers.GetSize()||channelidx<0||channelidx>=MAX_USER_CHANNELS) return NULL;
   RemoteUser_Channel *p=m_remoteusers.Get(useridx)->channels + channelidx;
@@ -1677,13 +1680,20 @@ char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, floa
   if (mute) *mute=!!(user->mutedmask & (1<<channelidx));
   if (solo) *solo=!!(user->solomask & (1<<channelidx));
   if (outch) *outch=p->outch;
+  if (stereoout) *stereoout=p->stereoout;
 
   return p->name.Get();
 }
 
 
 void NJClient::SetUserChannelState(int useridx, int channelidx, 
-                                   bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo, bool setoutch, int outch)
+                                   bool setsub, bool sub,
+				   bool setvol, float vol,
+				   bool setpan, float pan,
+				   bool setmute, bool mute,
+				   bool setsolo, bool solo,
+				   bool setoutch, int outch,
+				   bool setstereoout, bool stereoout)
 {
   if (useridx<0 || useridx>=m_remoteusers.GetSize()||channelidx<0||channelidx>=MAX_USER_CHANNELS) return;
   RemoteUser *user=m_remoteusers.Get(useridx);
@@ -1721,6 +1731,7 @@ void NJClient::SetUserChannelState(int useridx, int channelidx,
   if (setvol) p->volume=vol;
   if (setpan) p->pan=pan;
   if (setoutch) p->outch=outch;
+  if (setstereoout) p->stereoout = stereoout;
   if (setmute) 
   {
     if (mute)
@@ -1945,7 +1956,7 @@ void NJClient::SetWorkDir(const char *path)
 }
 
 
-RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), ds(NULL)
+RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), stereoout(false), ds(NULL)
 {
   memset(next_ds,0,sizeof(next_ds));
 }

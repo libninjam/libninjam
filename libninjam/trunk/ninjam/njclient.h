@@ -116,6 +116,7 @@ public:
   float config_metronome,config_metronome_pan; // volume of metronome
   bool  config_metronome_mute;
   int	config_metronome_channel;
+  bool config_metronome_stereoout;
   float config_mastervolume,config_masterpan; // master volume
   bool  config_mastermute;
   int   config_debug_level; 
@@ -145,8 +146,23 @@ public:
   void SetUserState(int idx, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute);
 
   float GetUserChannelPeak(int useridx, int channelidx);
-  char *GetUserChannelState(int useridx, int channelidx, bool *sub=0, float *vol=0, float *pan=0, bool *mute=0, bool *solo=0, int *outch=0);
-  void SetUserChannelState(int useridx, int channelidx, bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo, bool setoutch, int outch);
+  char *GetUserChannelState(int useridx,
+			    int channelidx,
+			    bool *sub=0,
+			    float *vol=0,
+			    float *pan=0,
+			    bool *mute=0,
+			    bool *solo=0,
+			    int *outch=0,
+			    bool *stereoout=0);
+  void SetUserChannelState(int useridx, int channelidx,
+			   bool setsub, bool sub,
+			   bool setvol, float vol,
+			   bool setpan, float pan,
+			   bool setmute, bool mute,
+			   bool setsolo, bool solo,
+			   bool setoutch, int outch,
+			   bool setstereout, bool stereoout);
   int EnumUserChannels(int useridx, int i); // returns <0 if out of channels. start with i=0, and go upwards
 
   int GetMaxLocalChannels() { return m_max_localch; }

@@ -41,13 +41,25 @@ class NJClient;
 
 class audioStreamer
 {
-	public:
-		audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; }
-		virtual ~audioStreamer() { }
+ public:
+  audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; }
+  virtual ~audioStreamer() { }
+  
+  virtual const char *GetChannelName(int idx)=0;
+  virtual const char *GetInputChannelName(int idx) {
+    return GetChannelName(idx);
+  }
+  virtual const char *GetOutputChannelName(int idx) {
+    return GetChannelName(idx);
+  }
+  virtual bool addInputChannel() {
+    return false;
+  }
+  virtual bool addOutputChannel() {
+    return false;
+  }
 
-    virtual const char *GetChannelName(int idx)=0;
-
-		int m_srate, m_innch, m_outnch, m_bps;
+  int m_srate, m_innch, m_outnch, m_bps;
 };
 
 
