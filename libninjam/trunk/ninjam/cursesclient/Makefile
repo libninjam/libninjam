@@ -6,7 +6,7 @@ PREFIX=$(DESTDIR)/usr
 
 OPTFLAGS =  -O2
 
-LFLAGS = -lm -L../.. -lninjam-client
+LFLAGS = -lm -L../.. -lninjam-client -lninjam-common
 ifdef MAC
 OPTFLAGS += -D_MAC -mcpu=7450
 LFLAGS += -framework coreaudio -lncurses.5
