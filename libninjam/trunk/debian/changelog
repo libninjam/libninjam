@@ -1,3 +1,10 @@
+ninjam (0.02-7) unstable; urgency=low
+
+  * fix compilation of cursesclient on system where libninjam has not
+    yet been installed.
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Thu, 23 Nov 2006 01:32:50 +0100
+
 ninjam (0.02-6) unstable; urgency=low
 
   * added jack transport fix from robin
