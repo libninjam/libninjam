@@ -1,4 +1,6 @@
+ifndef PREFIX
 PREFIX=$(DESTDIR)/usr
+endif
 
 #############################################################
 # CPU optimization section

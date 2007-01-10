@@ -6,6 +6,6 @@ includedir=${prefix}/include
 Name: ninjam
 Description: Realtime Music Collaboration Software
 Requires:
-Version: 0.02
+Version: 0.02-7
 Libs: -L${libdir} -lninjam-common
 Cflags: -I${includedir}/libninjam
