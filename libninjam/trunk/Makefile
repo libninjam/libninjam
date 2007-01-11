@@ -1,6 +1,6 @@
-ifndef PREFIX
-PREFIX=$(DESTDIR)/usr
-endif
+DESTDIR=/
+PREFIX=/usr
+INSTALLDIR=$(DESTDIR)$(PREFIX)
 
 #############################################################
 # CPU optimization section
@@ -74,16 +74,17 @@ clean:
 	(cd ninjam/server && make clean)
 
 install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-client.a
-	mkdir -p $(PREFIX)/include/libninjam/ninjam
-	mkdir -p $(PREFIX)/include/libninjam/WDL
-	mkdir -p $(PREFIX)/include/libninjam/WDL/jnetlib
-	mkdir -p $(PREFIX)/lib
-	mkdir -p $(PREFIX)/lib/pkgconfig
-	install -m 644 ninjam/*.h $(PREFIX)/include/libninjam/ninjam/
-	install -m 644 WDL/*.h $(PREFIX)/include/libninjam/WDL/
-	install -m 644 WDL/jnetlib/*.h $(PREFIX)/include/libninjam/WDL/jnetlib/
-	install *.so $(PREFIX)/lib/
-	install -m 755 *.a $(PREFIX)/lib/
-	install -m 644 ninjam.pc $(PREFIX)/lib/pkgconfig/
+	mkdir -p $(INSTALLDIR)/include/libninjam/ninjam
+	mkdir -p $(INSTALLDIR)/include/libninjam/WDL
+	mkdir -p $(INSTALLDIR)/include/libninjam/WDL/jnetlib
+	mkdir -p $(INSTALLDIR)/lib
+	mkdir -p $(INSTALLDIR)/lib/pkgconfig
+	install -m 644 ninjam/*.h $(INSTALLDIR)/include/libninjam/ninjam/
+	install -m 644 WDL/*.h $(INSTALLDIR)/include/libninjam/WDL/
+	install -m 644 WDL/jnetlib/*.h $(INSTALLDIR)/include/libninjam/WDL/jnetlib/
+	install *.so $(INSTALLDIR)/lib/
+	install -m 755 *.a $(INSTALLDIR)/lib/
+	install -m 644 ninjam.pc $(INSTALLDIR)/lib/pkgconfig/
+	install -m 644 ninjam-client.pc $(INSTALLDIR)/lib/pkgconfig/
 	(cd ninjam/cursesclient && make install)
 	(cd ninjam/server && make install)

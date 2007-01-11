@@ -1,4 +1,6 @@
-PREFIX=$(DESTDIR)/usr
+DESTDIR=/
+PREFIX=/usr
+INSTALLDIR=$(DESTDIR)$(PREFIX)
 
 #############################################################
 # CPU optimization section
@@ -39,5 +41,5 @@ clean:
 	-rm $(OBJS) cninjam
 
 install: cninjam
-	mkdir -p $(PREFIX)/bin
-	install cninjam $(PREFIX)/bin
+	mkdir -p $(INSTALLDIR)/bin
+	install cninjam $(INSTALLDIR)/bin

@@ -1,4 +1,5 @@
 usr/lib/libninjam-client.a
+usr/lib/pkgconfig/ninjam-client.pc
 usr/include/libninjam/ninjam/njclient.h
 usr/include/libninjam/ninjam/njmisc.h
 usr/include/libninjam/ninjam/audiostream.h

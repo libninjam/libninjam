@@ -1467,10 +1467,10 @@ int main(int argc, char **argv)
 				else if (stage) { a = 27; stage=0; }
 			}
 		}
-		if (a == 127) a = KEY_BACKSPACE;
 		if (a == KEY_F(7)) a = KEY_F(11);
 		if (a == KEY_F(8)) a = KEY_F(12);
 #endif
+		if (a == 127) a = KEY_BACKSPACE;
       if (a!=ERR)
       {
         if (!g_ui_state) switch (a)
