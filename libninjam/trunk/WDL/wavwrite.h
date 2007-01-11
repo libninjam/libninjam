@@ -247,4 +247,3 @@ class WaveWriter
 
 
 #endif//_WAVWRITE_H_
-
