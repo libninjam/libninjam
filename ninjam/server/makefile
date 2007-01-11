@@ -1,4 +1,6 @@
-PREFIX=$(DESTDIR)/usr
+DESTDIR=/
+PREFIX=/usr
+INSTALLDIR=$(DESTDIR)$(PREFIX)
 
 CFLAGS =  -O2 -s -Wall -I../..
 
@@ -24,5 +26,5 @@ clean:
 	-rm $(OBJS) ninjamsrv
 
 install: ninjamsrv
-	mkdir -p $(PREFIX)/bin
-	install ninjamsrv $(PREFIX)/bin
+	mkdir -p $(INSTALLDIR)/bin
+	install ninjamsrv $(INSTALLDIR)/bin

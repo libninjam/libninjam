@@ -1956,7 +1956,7 @@ void NJClient::SetWorkDir(const char *path)
 }
 
 
-RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), stereoout(false), ds(NULL)
+RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), stereoout(true), ds(NULL)
 {
   memset(next_ds,0,sizeof(next_ds));
 }

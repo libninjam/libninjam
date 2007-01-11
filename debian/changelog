@@ -1,3 +1,14 @@
+ninjam (0.02-7ubuntu2) feisty; urgency=low
+
+  * add pkgconfig files for client libraries
+  * set stereoout to true by default to fix a problem in cninjam
+    (patch by Adam Sampson)
+  * separate PREFIX and DESTDIR in makefiles
+  * enable backspace key in curses client for non-MAC platforms
+    (patch by Adam Sampson)
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Thu, 11 Jan 2007 01:06:22 +0100
+
 ninjam (0.02-7ubuntu1) feisty; urgency=low
 
   * update pkgconfig file to reflect current version
