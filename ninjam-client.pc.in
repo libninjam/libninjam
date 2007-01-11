@@ -1,4 +1,4 @@
-prefix=/usr
+prefix=@prefix@
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
@@ -6,6 +6,6 @@ includedir=${prefix}/include
 Name: ninjam-client
 Description: Realtime Music Collaboration Software (client library)
 Requires: ninjam
-Version: 0.02-7
+Version: @VERSION@
 Libs: -L${libdir} -lninjam-client
 Cflags: -I${includedir}/libninjam

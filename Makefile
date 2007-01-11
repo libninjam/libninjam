@@ -1,6 +1,7 @@
-DESTDIR=/
+DESTDIR=
 PREFIX=/usr
 INSTALLDIR=$(DESTDIR)$(PREFIX)
+VERSION=$(shell head -n 1 debian/changelog|sed -e "s,^ninjam (\(.*\)) .*,\1,")
 
 #############################################################
 # CPU optimization section
@@ -49,9 +50,10 @@ CLIENT_OBJS += ninjam/njmisc.o
 CXXFLAGS = $(CFLAGS)
 
 default: libninjam-common.so libninjam-client.so \
-	 libninjam-common.a libninjam-client.a
-	(cd ninjam/cursesclient && make)
-	(cd ninjam/server && make)
+	 libninjam-common.a libninjam-client.a \
+	 ninjam.pc ninjam-client.pc
+	$(MAKE) -C ninjam/cursesclient
+	$(MAKE) -C ninjam/server
 
 libninjam-common.so: $(COMMON_OBJS)
 	$(CXX) -shared $(CXXFLAGS) -o libninjam-common.so $(COMMON_OBJS)
@@ -66,14 +68,19 @@ libninjam-common.a: $(COMMON_OBJS)
 libninjam-client.a: $(CLIENT_OBJS) libninjam-common.a
 	ar cr libninjam-client.a $(CLIENT_OBJS) libninjam-common.a
 
+%.pc: %.pc.in
+	sed 's,^\(prefix=\).*,\1$(PREFIX),; s,^\(Version: \).*,\1$(VERSION),' $< >$@
+
 clean:
 	-rm $(COMMON_OBJS) $(CLIENT_OBJS) \
 	libninjam-common.so libninjam-client.so \
-	libninjam-common.a libninjam-client.a
-	(cd ninjam/cursesclient && make clean)
-	(cd ninjam/server && make clean)
+	libninjam-common.a libninjam-client.a \
+	ninjam.pc ninjam-client.pc
+	$(MAKE) -C ninjam/cursesclient clean
+	$(MAKE) -C ninjam/server clean
 
-install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-client.a
+install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-client.a \
+	 ninjam.pc ninjam-client.pc
 	mkdir -p $(INSTALLDIR)/include/libninjam/ninjam
 	mkdir -p $(INSTALLDIR)/include/libninjam/WDL
 	mkdir -p $(INSTALLDIR)/include/libninjam/WDL/jnetlib
@@ -86,5 +93,5 @@ install: libninjam-common.so libninjam-client.so libninjam-common.a libninjam-cl
 	install -m 755 *.a $(INSTALLDIR)/lib/
 	install -m 644 ninjam.pc $(INSTALLDIR)/lib/pkgconfig/
 	install -m 644 ninjam-client.pc $(INSTALLDIR)/lib/pkgconfig/
-	(cd ninjam/cursesclient && make install)
-	(cd ninjam/server && make install)
+	$(MAKE) -C ninjam/cursesclient install
+	$(MAKE) -C ninjam/server install
