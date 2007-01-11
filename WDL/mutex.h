@@ -116,4 +116,3 @@ class WDL_Mutex {
 };
 
 #endif
-
