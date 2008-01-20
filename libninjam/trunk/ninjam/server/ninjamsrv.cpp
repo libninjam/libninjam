@@ -1,6 +1,6 @@
 /*
     NINJAM Server - ninjamsrv.cpp
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005-2007 Cockos Incorporated
 
     NINJAM is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,9 +51,9 @@
 #include <WDL/ptrlist.h>
 #include <WDL/string.h>
 
-#define VERSION "v0.02"
+#define VERSION "v0.06"
 
-const char *startupmessage="NINJAM Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005, Cockos, Inc.\n";
+const char *startupmessage="NINJAM Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
 int g_set_uid=-1;
 int g_default_bpm,g_default_bpi;
@@ -189,7 +189,7 @@ public:
         }
       }
 
-      privs=(g_config_allow_anonchat?PRIV_CHATSEND:0) | (g_config_allowanonymous_multi?PRIV_ALLOWMULTI:0);
+      privs=(g_config_allow_anonchat?PRIV_CHATSEND:0) | (g_config_allowanonymous_multi?PRIV_ALLOWMULTI:0) | PRIV_VOTE;
       max_channels=g_config_maxch_anon;
     }
     else
@@ -294,15 +294,15 @@ static int ConfigOnToken(LineParser *lp)
   {
     if (lp->getnumtokens() != 2) return -1;
     g_default_bpi=lp->gettoken_int(1);
-    if (g_default_bpi<2) g_default_bpi=2;
-    else if (g_default_bpi > 1024) g_default_bpi=1024;
+    if (g_default_bpi<MIN_BPI) g_default_bpi=MIN_BPI;
+    else if (g_default_bpi > MAX_BPI) g_default_bpi=MAX_BPI;
   }
   else if (!stricmp(t,"DefaultBPM"))
   {
     if (lp->getnumtokens() != 2) return -1;
     g_default_bpm=lp->gettoken_int(1);
-    if (g_default_bpm<20) g_default_bpm=20;
-    else if (g_default_bpm > 400) g_default_bpm=400;
+    if (g_default_bpm<MIN_BPM) g_default_bpm=MIN_BPM;
+    else if (g_default_bpm > MAX_BPM) g_default_bpm=MAX_BPM;
   }
   else if (!stricmp(t,"DefaultTopic"))
   {
@@ -323,6 +323,16 @@ static int ConfigOnToken(LineParser *lp)
     m_group->m_keepalive=lp->gettoken_int(1);
     if (m_group->m_keepalive < 0 || m_group->m_keepalive > 255)
       m_group->m_keepalive=0;
+  }
+  else if (!stricmp(t,"SetVotingThreshold"))
+  {
+    if (lp->getnumtokens() != 2) return -1;
+    m_group->m_voting_threshold=lp->gettoken_int(1);
+  }
+  else if (!stricmp(t,"SetVotingVoteTimeout"))
+  {
+    if (lp->getnumtokens() != 2) return -1;
+    m_group->m_voting_timeout=lp->gettoken_int(1);
   }
   else if (!stricmp(t,"ServerLicense"))
   {
@@ -393,13 +403,15 @@ static int ConfigOnToken(LineParser *lp)
       char *ptr=lp->gettoken_str(3);
       while (*ptr)
       {
-        if (*ptr == '*') p->priv_flag|=~0;
+        if (*ptr == '*') p->priv_flag|=~PRIV_HIDDEN; // everything but hidden if * used
         else if (*ptr == 'T' || *ptr == 't') p->priv_flag |= PRIV_TOPIC;
         else if (*ptr == 'B' || *ptr == 'b') p->priv_flag |= PRIV_BPM;
         else if (*ptr == 'C' || *ptr == 'c') p->priv_flag |= PRIV_CHATSEND;
         else if (*ptr == 'K' || *ptr == 'k') p->priv_flag |= PRIV_KICK;        
         else if (*ptr == 'R' || *ptr == 'r') p->priv_flag |= PRIV_RESERVE;        
         else if (*ptr == 'M' || *ptr == 'm') p->priv_flag |= PRIV_ALLOWMULTI;
+        else if (*ptr == 'H' || *ptr == 'h') p->priv_flag |= PRIV_HIDDEN;       
+        else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;               
         else 
         {
           if (g_logfp)
@@ -409,7 +421,7 @@ static int ConfigOnToken(LineParser *lp)
         ptr++;
       }
     }
-    else p->priv_flag=PRIV_CHATSEND;// default privs
+    else p->priv_flag=PRIV_CHATSEND|PRIV_VOTE;// default privs
     g_userlist.Add(p);
   }
   else if (!stricmp(t,"AllowHiddenUsers"))
@@ -885,17 +897,18 @@ int main(int argc, char **argv)
          
 
         }
-        Sleep(20);
+        Sleep(1);
 #else
-	      struct timespec ts={0,20*1000*1000};
+	      struct timespec ts={0,1*1000*1000};
 	      nanosleep(&ts,NULL);
 #endif
 
-        if (g_reloadconfig && (strcmp(argv[1],"-") && !ReadConfig(argv[1])))
+        if (g_reloadconfig && strcmp(argv[1],"-"))
         {
           g_reloadconfig=0;
 
-          onConfigChange(argc,argv);
+          if (!ReadConfig(argv[1]))
+            onConfigChange(argc,argv);
         }
 
         time_t now;

@@ -1,6 +1,6 @@
 /*
     NINJAM Server - usercon.cpp
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005-2007 Cockos Incorporated
 
     NINJAM is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -96,7 +96,8 @@ extern void logText(char *s, ...);
 
 #define TRANSFER_TIMEOUT 8
 
-User_Connection::User_Connection(JNL_Connection *con, User_Group *grp) : m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0)
+User_Connection::User_Connection(JNL_Connection *con, User_Group *grp) : m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
+      m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
   m_netcon.attach(con);
 
@@ -209,6 +210,26 @@ int User_Connection::OnRunAuth(User_Group *group)
       Send(newmsg.build());
     }
 
+    {
+      int cnt=0;
+      int user;
+      for (user = 0; user < group->m_users.GetSize(); user ++)
+      {
+        User_Connection *u=group->m_users.Get(user);
+        if (u != this && u->m_auth_state > 0 && !(u->m_auth_privs & PRIV_HIDDEN))
+          cnt++;
+      }
+      char buf[64],buf2[64];
+      sprintf(buf,"%d",cnt);
+      sprintf(buf2,"%d",group->m_max_users);
+
+      mpb_chat_message newmsg;
+      newmsg.parms[0]="USERCOUNT";
+      newmsg.parms[1]=buf;;
+      newmsg.parms[2]=buf2;
+      Send(newmsg.build());
+    }
+
     return 0;
   }
 
@@ -270,7 +291,7 @@ int User_Connection::OnRunAuth(User_Group *group)
     for (user = 0; user < group->m_users.GetSize(); user ++)
     {
       User_Connection *u=group->m_users.Get(user);
-      if (u != this && u->m_auth_state > 0)
+      if (u != this && u->m_auth_state > 0 && !(u->m_auth_privs & PRIV_HIDDEN))
         cnt++;
     }
     if (cnt >= group->m_max_users)
@@ -348,7 +369,7 @@ void User_Connection::SendUserList(User_Group *group)
           acnt++;
         }
       }
-      if (!acnt && !group->m_allow_hidden_users && u->m_max_channels) // give users at least one channel
+      if (!acnt && !group->m_allow_hidden_users && u->m_max_channels && !(u->m_auth_privs & PRIV_HIDDEN)) // give users at least one channel
       {
           bh.build_add_rec(1,0,0,0,0,u->m_username.Get(),"");
       }
@@ -477,14 +498,16 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
             {
               if (!chnp) chnp=""; 
 
+              int doactive=!(f&0x80);
+
               // only if something changes, do we add it to the rec
-              int hadch=!m_channels[whichch].active;
+              int hadch=!m_channels[whichch].active != !doactive;
               if (!hadch) hadch = strcmp(chnp,m_channels[whichch].name.Get());
               if (!hadch) hadch = m_channels[whichch].volume!=v;
               if (!hadch) hadch = m_channels[whichch].panning!=p;
               if (!hadch) hadch = m_channels[whichch].flags!=f;
 
-              m_channels[whichch].active=1;
+              m_channels[whichch].active=doactive;
               m_channels[whichch].name.Set(chnp);
               m_channels[whichch].volume=v;
               m_channels[whichch].panning=p;
@@ -521,7 +544,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
               whichch++;
             }
-            if (!group->m_allow_hidden_users && m_max_channels)
+            if (!group->m_allow_hidden_users && m_max_channels && !(m_auth_privs&PRIV_HIDDEN))
             {
               for (whichch = 0; whichch < MAX_USER_CHANNELS && !m_channels[whichch].active; whichch ++);
 
@@ -762,7 +785,9 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 }
 
 
-User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), m_loopcnt(0), m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
+User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), 
+  m_voting_threshold(110), m_voting_timeout(120),
+  m_loopcnt(0), m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
 {
   CreateUserLookup=0;
   memset(&m_next_loop_time,0,sizeof(m_next_loop_time));
@@ -957,6 +982,142 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
 {
   if (!strcmp(msg->parms[0],"MSG")) // chat message
   {
+    WDL_PtrList<Net_Message> need_bcast;
+    if (msg->parms[1] && !strncmp(msg->parms[1],"!vote",5)) // chat message
+    {
+      if (!(con->m_auth_privs & PRIV_VOTE) || m_voting_threshold > 100 || m_voting_threshold < 1)
+      {
+        mpb_chat_message newmsg;
+        newmsg.parms[0]="MSG";
+        newmsg.parms[1]="";
+        newmsg.parms[2]=(char *)(m_voting_threshold > 100 || m_voting_threshold < 1? "[voting system] Voting not enabled" : "[voting system] No vote permission");
+        con->Send(newmsg.build());
+        return;
+      }
+      const char *p=msg->parms[1];
+      while (*p && *p != ' ') p++;
+      while (*p == ' ') p++;
+      const char *pn=p;
+      while (*p && *p != ' ') p++;
+      while (*p == ' ') p++;
+
+      if (*p && !strncmp(pn,"bpm",3) && atoi(p) >= MIN_BPM && atoi(p) <= MAX_BPM)
+      {
+        con->m_vote_bpm=atoi(p);
+        con->m_vote_bpm_lasttime=time(NULL);
+      }
+      else if (*p && !strncmp(pn,"bpi",3) && atoi(p) >= MIN_BPI && atoi(p) <= MAX_BPI)
+      {
+        con->m_vote_bpi=atoi(p);
+        con->m_vote_bpi_lasttime=time(NULL);
+      }
+      else
+      {
+        mpb_chat_message newmsg;
+        newmsg.parms[0]="MSG";
+        newmsg.parms[1]="";
+        newmsg.parms[2]="[voting system] !vote requires <bpm|bpi> <value> parameters";
+        con->Send(newmsg.build());
+        return;
+      }
+      // print voting stats
+      {
+        int bpis[1+MAX_BPI-MIN_BPI]={0,};
+        int bpms[1+MAX_BPM-MIN_BPM]={0,};
+        int x;
+        int maxbpi=0, maxbpm=0;
+        int vucnt=0;
+
+        time_t now=time(NULL);
+        for (x = 0; x < m_users.GetSize(); x ++)
+        {
+          User_Connection *p=m_users.Get(x);
+          if (p->m_auth_state<=0) continue;
+          if (!(p->m_auth_privs & PRIV_HIDDEN)) vucnt++;
+          if (p->m_vote_bpi_lasttime >= now-m_voting_timeout && p->m_vote_bpi >= MIN_BPI && p->m_vote_bpi <= MAX_BPI)
+          {
+              int v=++bpis[p->m_vote_bpi-MIN_BPI];
+              if (v > bpis[maxbpi]) maxbpi=p->m_vote_bpi-MIN_BPI;
+          }
+          if (p->m_vote_bpm_lasttime >= now-m_voting_timeout && p->m_vote_bpm >= MIN_BPM && p->m_vote_bpm <= MAX_BPM)
+          {
+              int v=++bpms[p->m_vote_bpm-MIN_BPM];
+              if (v > bpms[maxbpm]) maxbpm=p->m_vote_bpm-MIN_BPM;
+          }
+        }
+        if (bpms[maxbpm] > 0 && !strncmp(pn,"bpm",3))
+        {
+          if (bpms[maxbpm] >= (vucnt * m_voting_threshold + 50)/100)
+          {
+            m_last_bpm=maxbpm+MIN_BPM;
+            char buf[512];
+            sprintf(buf,"[voting system] setting BPM to %d",m_last_bpm);
+
+            mpb_chat_message newmsg;
+            newmsg.parms[0]="MSG";
+            newmsg.parms[1]="";
+            newmsg.parms[2]=buf;
+            need_bcast.Add(newmsg.build());
+
+
+
+            mpb_server_config_change_notify mk;
+            mk.beats_interval=m_last_bpi;
+            mk.beats_minute=m_last_bpm;
+            need_bcast.Add(mk.build());
+            for (x = 0; x < m_users.GetSize(); x ++)
+              m_users.Get(x)->m_vote_bpm_lasttime = 0;
+          }
+          else
+          {
+            char buf[512];
+            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPM [each vote expires in %ds]",bpms[maxbpm],(vucnt * m_voting_threshold + 50)/100,maxbpm+MIN_BPM,m_voting_timeout);
+
+            mpb_chat_message newmsg;
+            newmsg.parms[0]="MSG";
+            newmsg.parms[1]="";
+            newmsg.parms[2]=buf;
+            need_bcast.Add(newmsg.build());
+          }
+        }
+        if (bpis[maxbpi] > 0 && !strncmp(pn,"bpi",3))
+        {
+          if (bpis[maxbpi] >= (vucnt * m_voting_threshold + 50)/100)
+          {
+            m_last_bpi=maxbpi+MIN_BPI;
+            char buf[512];
+            sprintf(buf,"[voting system] setting BPI to %d",m_last_bpi);
+
+            mpb_chat_message newmsg;
+            newmsg.parms[0]="MSG";
+            newmsg.parms[1]="";
+            newmsg.parms[2]=buf;
+            need_bcast.Add(newmsg.build());
+
+            mpb_server_config_change_notify mk;
+            mk.beats_interval=m_last_bpi;
+            mk.beats_minute=m_last_bpm;
+            need_bcast.Add(mk.build());
+            for (x = 0; x < m_users.GetSize(); x ++)
+              m_users.Get(x)->m_vote_bpi_lasttime = 0;
+          }
+          else
+          {
+            char buf[512];
+            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPI [each vote expires in %ds]",bpis[maxbpi],(vucnt * m_voting_threshold + 50)/100,maxbpi+MIN_BPI,m_voting_timeout);
+
+            mpb_chat_message newmsg;
+            newmsg.parms[0]="MSG";
+            newmsg.parms[1]="";
+            newmsg.parms[2]=buf;
+            need_bcast.Add(newmsg.build());
+          }
+        }
+      }
+     
+
+    }
+
     if (!(con->m_auth_privs & PRIV_CHATSEND))
     {
       mpb_chat_message newmsg;
@@ -973,6 +1134,20 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       newmsg.parms[2]=msg->parms[1];
       Broadcast(newmsg.build());
     }
+    int x;
+    for (x = 0; x < need_bcast.GetSize(); x ++)
+      Broadcast(need_bcast.Get(x));
+    need_bcast.Empty();
+  }
+  else if (!strcmp(msg->parms[0],"SESSION")) // session block descriptor message
+  {
+    mpb_chat_message newmsg;
+    newmsg.parms[0]="SESSION";
+    newmsg.parms[1]=con->m_username.Get();
+    newmsg.parms[2]=msg->parms[1]; // guid
+    newmsg.parms[3]=msg->parms[2]; // index
+    newmsg.parms[4]=msg->parms[3]; // offset, length
+    Broadcast(newmsg.build(),con);
   }
   else if (!strcmp(msg->parms[0],"PRIVMSG")) // chat message
   {

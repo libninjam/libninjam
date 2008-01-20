@@ -1,6 +1,6 @@
 /*
     NINJAM Server - usercon.h
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005-2007 Cockos Incorporated
 
     NINJAM is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,8 +50,13 @@
 #define PRIV_KICK 8
 #define PRIV_RESERVE 16
 #define PRIV_ALLOWMULTI 32 // allows multiple users by the same name (subsequent users append -X to them)
+#define PRIV_HIDDEN 64   // hidden user, doesn't count for a slot, too
+#define PRIV_VOTE 128
 
-
+#define MAX_BPM 400
+#define MAX_BPI 64
+#define MIN_BPM 40
+#define MIN_BPI 2
 
 class IUserInfoLookup // abstract base class, overridden by server
 {
@@ -100,6 +105,7 @@ class User_Group
     IUserInfoLookup *(*CreateUserLookup)(char *username);
 
     void onChatMessage(User_Connection *con, mpb_chat_message *msg);
+    
 
     WDL_PtrList<User_Connection> m_users;
 
@@ -107,6 +113,9 @@ class User_Group
     int m_last_bpm, m_last_bpi;
     int m_keepalive;
 
+
+    int m_voting_threshold; // can be 1-100, or >100 to disable
+    int m_voting_timeout; // seconds
 
     int m_loopcnt;
 
@@ -205,6 +214,11 @@ class User_Connection
     int m_reserved;
 
     int m_max_channels;
+
+    int m_vote_bpm;
+    time_t m_vote_bpm_lasttime;
+    int m_vote_bpi;
+    time_t m_vote_bpi_lasttime;
 
     User_Channel m_channels[MAX_USER_CHANNELS];
 
