@@ -1,0 +1,8 @@
+/var/log/ninjam/ninjam-server.log {
+  rotate 6
+  monthly
+  compress
+  delaycompress
+  missingok
+  notifempty
+}

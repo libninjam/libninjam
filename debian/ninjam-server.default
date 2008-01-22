@@ -1,0 +1,5 @@
+# To enable ninjam-server, set the following variable to "yes"
+NINJAM_SERVER_ENABLED="no"
+
+# Options to pass to ninjamsrv
+NINJAM_SERVER_OPTS="-setuid nobody"
