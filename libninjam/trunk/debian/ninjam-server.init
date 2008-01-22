@@ -42,7 +42,7 @@ case "$1" in
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE \
 	    --exec $DAEMON && echo "$NAME." || echo "failed."
 	;;
-  #reload)
+  reload)
 	#
 	#	If the daemon can reload its config files on the fly
 	#	for example by sending it SIGHUP, do it here.
@@ -50,10 +50,10 @@ case "$1" in
 	#	If the daemon responds to changes in its config file
 	#	directly anyway, make this a do-nothing entry.
 	#
-	# echo "Reloading $DESC configuration files."
-	# start-stop-daemon --stop --signal 1 --quiet --pidfile \
-	#	/var/run/$NAME.pid --exec $DAEMON
-  #;;
+	echo -n "Reloading $DESC configuration files:"
+	start-stop-daemon --stop --signal 1 --quiet --pidfile \
+	    $PIDFILE --exec $DAEMON && echo "$NAME." || echo "failed."
+	;;
   restart|force-reload)
 	#
 	#	If the "reload" option is implemented, move the "force-reload"
@@ -67,8 +67,7 @@ case "$1" in
 	;;
   *)
 	N=/etc/init.d/$NAME
-	# echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
-	echo "Usage: $N {start|stop|restart|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
 	exit 1
 	;;
 esac
