@@ -2,7 +2,7 @@ Source: ninjam
 Section: unknown
 Priority: optional
 Maintainer: Tobias Gehrig <tobias@gehrignet.de>
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 5), libvorbis-dev, libjack-dev, libasound2-dev, libncurses5-dev
 Standards-Version: 3.7.2
 
 Package: libninjam-common-dev
