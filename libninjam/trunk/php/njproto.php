@@ -39,8 +39,13 @@ function nj_getmsg($fp)
 
 function nj_makepasshash($user, $pass, $challenge)
 {
-  $s=sha1($user . ":" . $pass,TRUE);
-  return sha1($s . $challenge,TRUE);
+  if (phpversion () < "5") {
+    $s = pack("H*", sha1($user . ":" . $pass));
+    return (pack("H*", sha1($s . $challenge)));
+  } else {
+    $s=sha1($user . ":" . $pass,TRUE);
+    return sha1($s . $challenge,TRUE);
+  }
 }
 
 function nj_sendauthmsg($fp, $user, $pass, $challenge)
