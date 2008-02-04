@@ -93,6 +93,7 @@ class RemoteUser_Channel
     float volume, pan;
     int outch;
     bool stereoout;
+    int flags;
 
     WDL_String name;
 
@@ -203,7 +204,7 @@ public:
   // mode flag. 0=silence, 1=broadcasting
   bool broadcasting; //takes effect next loop
 
-
+  int flags;
 
   // internal state. should ONLY be used by the audio thread.
   bool bcast_active;
@@ -831,7 +832,7 @@ int NJClient::Run() // nonzero if sleep ok
                   RemoteUser *theuser;
                   for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),un); x ++);
 
-                 // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
+                  // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
 
 
                   m_users_cs.Enter();
@@ -845,6 +846,7 @@ int NJClient::Run() // nonzero if sleep ok
                     }
 
                     theuser->channels[cid].name.Set(chn);
+                    theuser->channels[cid].flags = f;
                     theuser->chanpresentmask |= 1<<cid;
 
 
@@ -1667,7 +1669,7 @@ int NJClient::EnumUserChannels(int useridx, int i)
   return -1;
 }
 
-char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo, int *outch, bool *stereoout)
+char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, float *vol, float *pan, bool *mute, bool *solo, int *outch, bool *stereoout, int *mode)
 {
   if (useridx<0 || useridx>=m_remoteusers.GetSize()||channelidx<0||channelidx>=MAX_USER_CHANNELS) return NULL;
   RemoteUser_Channel *p=m_remoteusers.Get(useridx)->channels + channelidx;
@@ -1681,6 +1683,7 @@ char *NJClient::GetUserChannelState(int useridx, int channelidx, bool *sub, floa
   if (solo) *solo=!!(user->solomask & (1<<channelidx));
   if (outch) *outch=p->outch;
   if (stereoout) *stereoout=p->stereoout;
+  if (mode) *mode=(p->flags & 6)>>1;
 
   return p->name.Get();
 }
@@ -1823,7 +1826,8 @@ void NJClient::GetLocalChannelProcessor(int ch, void **func, void **inst)
 }
 
 void NJClient::SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch,
-                                   bool setbitrate, int bitrate, bool setbcast, bool broadcast)
+                                   bool setbitrate, int bitrate, bool setbcast, bool broadcast,
+				   bool setmode, int mode)
 {  
   m_locchan_cs.Enter();
   int x;
@@ -1839,10 +1843,11 @@ void NJClient::SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int 
   if (setsrcch) c->src_channel=srcch;
   if (setbitrate) c->bitrate=bitrate;
   if (setbcast) c->broadcasting=broadcast;
+  if (setmode) c->flags=mode<<1;
   m_locchan_cs.Leave();
 }
 
-char *NJClient::GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast)
+char *NJClient::GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast, int *mode)
 {
   int x;
   for (x = 0; x < m_locchannels.GetSize() && m_locchannels.Get(x)->channel_idx!=ch; x ++);
@@ -1851,6 +1856,7 @@ char *NJClient::GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broa
   if (srcch) *srcch=c->src_channel;
   if (bitrate) *bitrate=c->bitrate;
   if (broadcast) *broadcast=c->broadcasting;
+  if (mode) *mode=(c->flags & 6)>>1;
 
   return c->name.Get();
 }
@@ -1919,7 +1925,7 @@ void NJClient::NotifyServerOfChannelChange()
     for (x = 0; x < m_locchannels.GetSize(); x ++)
     {
       Local_Channel *ch=m_locchannels.Get(x);
-      sci.build_add_rec(ch->name.Get(),0,0,0);
+      sci.build_add_rec(ch->name.Get(),0,0,ch->flags);
     }
     m_netcon->Send(sci.build());
   }
@@ -1956,7 +1962,7 @@ void NJClient::SetWorkDir(const char *path)
 }
 
 
-RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), stereoout(true), ds(NULL)
+RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), outch(0), stereoout(true), flags(0), ds(NULL)
 {
   memset(next_ds,0,sizeof(next_ds));
 }
@@ -2046,7 +2052,7 @@ void RemoteDownload::Write(void *buf, int len)
 
 
 Local_Channel::Local_Channel() : channel_idx(0), src_channel(0), volume(1.0f), pan(0.0f), 
-                muted(false), solo(false), broadcasting(false), 
+				 muted(false), solo(false), broadcasting(false), flags(0),
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
                 m_enc(NULL), 
                 m_enc_bitrate_used(0), 

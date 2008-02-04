@@ -154,7 +154,8 @@ public:
 			    bool *mute=0,
 			    bool *solo=0,
 			    int *outch=0,
-			    bool *stereoout=0);
+			    bool *stereoout=0,
+			    int *mode=0);
   void SetUserChannelState(int useridx, int channelidx,
 			   bool setsub, bool sub,
 			   bool setvol, float vol,
@@ -171,8 +172,8 @@ public:
   float GetLocalChannelPeak(int ch);
   void SetLocalChannelProcessor(int ch, void (*cbf)(float *, int ns, void *), void *inst);
   void GetLocalChannelProcessor(int ch, void **func, void **inst);
-  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast);
-  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast);
+  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast, bool setmode, int mode);
+  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast, int *mode);
   void SetLocalChannelMonitoring(int ch, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo);
   int GetLocalChannelMonitoring(int ch, float *vol, float *pan, bool *mute, bool *solo); // 0 on success
   void NotifyServerOfChannelChange(); // call after any SetLocalChannel* that occur after initial connect
