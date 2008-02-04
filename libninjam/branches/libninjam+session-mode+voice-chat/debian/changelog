@@ -1,3 +1,10 @@
+ninjam (0.06-1~sessionmode) gutsy; urgency=low
+
+  * add mode switching capability for ninjam, voice chat and session
+    mode (no functional protocol implementation yet)
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 04 Feb 2008 23:53:08 +0100
+
 ninjam (0.06-1ubuntu4) gutsy; urgency=low
 
   * apply patch from jnc to get njclient.cpp to compile on amd64

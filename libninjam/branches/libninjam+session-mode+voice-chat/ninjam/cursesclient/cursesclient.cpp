@@ -395,7 +395,7 @@ void showmainview(bool action=false, int ymove=0)
     int sch;
     bool bc,mute;
     float vol,pan;
-    char *name=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc);
+    char *name=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc,NULL);
     g_client->GetLocalChannelMonitoring(a,&vol,&pan,&mute,NULL);
 
     if (action && g_sel_ycat == selcat && g_sel_ypos == selpos)
@@ -409,7 +409,7 @@ void showmainview(bool action=false, int ymove=0)
       else if (g_sel_x == 1)
       {
         // toggle active
-        g_client->SetLocalChannelInfo(a,NULL,false,0,false,0,true,bc=!bc);
+        g_client->SetLocalChannelInfo(a,NULL,false,0,false,0,true,bc=!bc,false,0);
         g_client->NotifyServerOfChannelChange();
       }
       else if (g_sel_x == 2)
@@ -526,11 +526,11 @@ void showmainview(bool action=false, int ymove=0)
       int x;
       for (x = 0; x < g_client->GetMaxLocalChannels(); x ++)
       {
-        if (!g_client->GetLocalChannelInfo(x,NULL,NULL,NULL)) break;
+        if (!g_client->GetLocalChannelInfo(x,NULL,NULL,NULL,NULL)) break;
       }
       if (x < g_client->GetMaxLocalChannels())
       {
-        g_client->SetLocalChannelInfo(x,"channel",true,0,false,0,true,false);
+        g_client->SetLocalChannelInfo(x,"channel",true,0,false,0,true,false,true,0);
         g_client->NotifyServerOfChannelChange();
 
         const char *sname=g_audio->GetChannelName(0);
@@ -1176,10 +1176,10 @@ int main(int argc, char **argv)
                 switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0jesus\0name\0"))
                 {
                   case 0: // source 
-                    g_client->SetLocalChannelInfo(ch,NULL,true,lp.gettoken_int(n+1),false,0,false,false);
+                    g_client->SetLocalChannelInfo(ch,NULL,true,lp.gettoken_int(n+1),false,0,false,false,false,0);
                   break;
                   case 1: //broadcast
-                    g_client->SetLocalChannelInfo(ch,NULL,false,false,false,0,true,!!lp.gettoken_int(n+1));
+                    g_client->SetLocalChannelInfo(ch,NULL,false,false,false,0,true,!!lp.gettoken_int(n+1),false,0);
                   break;
                   case 2: //mute
                     g_client->SetLocalChannelMonitoring(ch,false,false,false,false,true,!!lp.gettoken_int(n+1),false,false);
@@ -1203,7 +1203,7 @@ int main(int argc, char **argv)
                     }
                   break;
                   case 7: //name
-                    g_client->SetLocalChannelInfo(ch,lp.gettoken_str(n+1),false,false,false,0,false,false);
+                    g_client->SetLocalChannelInfo(ch,lp.gettoken_str(n+1),false,false,false,0,false,false,false,0);
                   break;
                   default:
                   break;
@@ -1254,7 +1254,7 @@ int main(int argc, char **argv)
     }    
     else // set up defaults
     {
-      g_client->SetLocalChannelInfo(0,"channel0",true,0,false,0,true,true);
+      g_client->SetLocalChannelInfo(0,"channel0",true,0,false,0,true,true,true,0);
       g_client->SetLocalChannelMonitoring(0,false,0.0f,false,0.0f,false,false,false,false);
     }
   } 
@@ -1676,11 +1676,11 @@ int main(int argc, char **argv)
             case KEY_LEFT:
               {
                 int ch=0;
-                g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL);
+                g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL,NULL);
                 if (ch > 0) 
                 {
                   ch--;
-                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false);
+                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false,false,0);
                   g_client->NotifyServerOfChannelChange();
                   showmainview();
                 }
@@ -1691,11 +1691,11 @@ int main(int argc, char **argv)
             case KEY_RIGHT:
               {
                 int ch=0;
-                g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL);
+                g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL,NULL);
                 if (ch < g_audio->m_innch) 
                 {
                   ch++;
-                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false);
+                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false,false,0);
                   g_client->NotifyServerOfChannelChange();
                   showmainview();
                 }
@@ -1719,7 +1719,7 @@ int main(int argc, char **argv)
               {
                 if (g_ui_state == 4)
                 {
-                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,m_lineinput_str,false,0,false,0,false,false);
+                  g_client->SetLocalChannelInfo(g_ui_locrename_ch,m_lineinput_str,false,0,false,0,false,false,false,0);
                   g_client->NotifyServerOfChannelChange();
                 }
               }
@@ -1844,7 +1844,7 @@ time(NULL) >= nextupd
         float v=0.0f,p=0.0f;
         bool m=0,s=0;
       
-        lcn=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc);
+        lcn=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc,NULL);
         g_client->GetLocalChannelMonitoring(a,&v,&p,&m,&s);
         g_client->GetLocalChannelProcessor(a,NULL,&has_jesus);
 
