@@ -1,0 +1,103 @@
+ninjam (0.06-1ubuntu3) gutsy; urgency=low
+
+  * add php script examples to retrieve the server status
+  * add official server guide
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Wed, 30 Jan 2008 18:32:58 +0100
+
+ninjam (0.06-1ubuntu2) gutsy; urgency=low
+
+  * fix build-depends
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Tue, 29 Jan 2008 18:35:29 +0100
+
+ninjam (0.06-1ubuntu1) gutsy; urgency=low
+
+  * add init.d script, logrotate, default and config file
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 21 Jan 2008 23:14:28 +0100
+
+ninjam (0.06-1) gutsy; urgency=low
+
+  * merged with new upstream version of server
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sun, 20 Jan 2008 01:33:36 +0100
+
+ninjam (0.02-7ubuntu3) feisty; urgency=low
+
+  * fix some Makefile errors and create pkgconfig automatically with 
+    correct PREFIX (patch by Adam Sampson) and VERSION
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Thu, 11 Jan 2007 20:43:01 +0100
+
+ninjam (0.02-7ubuntu2) feisty; urgency=low
+
+  * add pkgconfig files for client libraries
+  * set stereoout to true by default to fix a problem in cninjam
+    (patch by Adam Sampson)
+  * separate PREFIX and DESTDIR in makefiles
+  * enable backspace key in curses client for non-MAC platforms
+    (patch by Adam Sampson)
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Thu, 11 Jan 2007 01:06:22 +0100
+
+ninjam (0.02-7ubuntu1) feisty; urgency=low
+
+  * update pkgconfig file to reflect current version
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Wed, 10 Jan 2007 20:50:42 +0100
+
+ninjam (0.02-7) unstable; urgency=low
+
+  * fix compilation of cursesclient on system where libninjam has not
+    yet been installed.
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Thu, 23 Nov 2006 01:32:50 +0100
+
+ninjam (0.02-6) unstable; urgency=low
+
+  * added jack transport fix from robin
+  * added patch for multiple outputs from expertsleepers
+  * fix problem with possibly negative output channel number
+  * make stereo channel output configurable
+  * add interface for adding audio channels and getting the names
+    from in- and output ports seperately
+	
+ -- Tobias Gehrig <tobias@gehrignet.de>  Wed, 22 Nov 2006 03:58:24 +0100
+
+ninjam (0.02-5) unstable; urgency=low
+
+  * make number of in-/output channels and client name of the
+    jack driver variable
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 18 Nov 2006 18:41:59 +0100
+
+ninjam (0.02-4) unstable; urgency=low
+
+  * reenabled alsa driver in addition to the jack driver
+  * some more conversions from char* to const char*
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 18 Nov 2006 03:47:07 +0100
+
+ninjam (0.02-3) unstable; urgency=low
+
+  * change filename parameter in WaveWriter to const char*
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Fri, 17 Nov 2006 18:24:32 +0100
+
+ninjam (0.02-2) unstable; urgency=low
+
+  *  changed SetLocalChannelInfo to get const char* name as input
+     instead of char* name
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Fri, 17 Nov 2006 01:48:49 +0100
+
+ninjam (0.02-1) unstable; urgency=low
+
+  * Initial release of ninjam library
+  * client and server build modified to use that library
+  * patched version of cursesclient using jack
+  * some parameters changed from char* to const char*
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 15 Nov 2006 00:57:01 +0100
+

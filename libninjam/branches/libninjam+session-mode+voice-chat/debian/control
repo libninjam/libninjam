@@ -1,0 +1,58 @@
+Source: ninjam
+Section: unknown
+Priority: optional
+Maintainer: Tobias Gehrig <tobias@gehrignet.de>
+Build-Depends: debhelper (>= 5), libvorbis-dev, libjack-dev, libasound2-dev, libncurses5-dev
+Standards-Version: 3.7.2
+
+Package: libninjam-common-dev
+Section: devel
+Architecture: any
+Depends: libninjam-common (= ${Source-Version})
+Description: Development files for libninjam-common
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.
+
+Package: libninjam-common
+Section: lib
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Realtime Music Collaboration Software (Common Library)
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.
+
+Package: libninjam-client-dev
+Section: devel
+Architecture: any
+Depends: libninjam-client (= ${Source-Version}), libninjam-common-dev (= ${Source-Version})
+Description: Development files for libninjam-client
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.
+
+Package: libninjam-client
+Section: lib
+Architecture: any
+Depends: libninjam-common (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: Realtime Music Collaboration Software (Client Library)
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.
+
+Package: ninjam-server
+Architecture: any
+Depends: libninjam-common (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: Realtime Music Collaboration Software (Server)
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.
+
+Package: ninjam-client
+Architecture: any
+Depends: libninjam-client (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: Realtime Music Collaboration Software (Client)
+ NINJAM is a program to allow people to make real music together
+ via the Internet. Every participant can hear every other participant.
+ Each user can also tweak their personal mix to his or her liking.

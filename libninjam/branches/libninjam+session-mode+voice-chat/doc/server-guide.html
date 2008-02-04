@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>NINJAM - Novel Intervallic Network Jamming Architecture for Music - Server Setup Guide</title>
+<link href="/style/general.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+</head>
+<body bgcolor="#303030" text="#FFFFFF">
+
+<table align=center height="100%" width="800" border=0 cellpadding=10 cellspacing=0 bgcolor="#FFFFFF">
+<tr height=80><td bgcolor="#5C5C5C" align=center>
+<h1>NINJAM</h1>
+<h4>Realtime Music Collaboration Software</h4>
+<h3>
+<a href="http://www.ninjam.com/index.php">Main</a> : <a href="http://www.ninjam.com/download.php">Download</a> : <a href="http://www.ninjam.com/autosong.php">Music Made With NINJAM</a> : <a href="http://www.ninjam.com/forum.php">Forum</a> : <a href="http://www.ninjam.com/jamfarm/index.php">Jam Farm</a></h3>
+</td></tr>
+
+<tr>
+<td valign=top bgcolor="#000000" width=600>
+
+<h2>NINJAM server setup guide</h2>
+
+To set up a NINJAM server, first find a host that has an abundance of outbound
+bandwidth. Or if you want to use NINJAM on a LAN with all of the hosts local,
+that is an option as well. The server can currently run on Windows, OS X, Linux, and FreeBSD. To download the server for your platform, see <a href="http://www.ninjam.com/download.php">the download page</a>.
+<p>
+To install the server, extract the archive (or copy the contents of the .dmg if on a mac) to a directory, then edit the example configuration file to suit your
+needs. Here is a list of the configuration items and what they mean:<ul>
+<li><b>Port</b> <i>n</i> - port for server to listen on. The default is 2049. 
+<li><b>ServerLicense</b> <i>filename.txt</i> - forces users to view and agree to the license provided to connect. This is useful if you want to run a public server and make people who contribute to a jam license their parts under a Creative Commons or similar license (or whatever license you choose)
+<li><b>MaxUsers</b> <i>n</i> - maximum number of users allowed.
+<li><b>MaxChannels</b> <i>n n</i> - set the maximum channels per user for normal (first parameter) and anonymous (second parameter) users.
+<li><B>SetLog</b> <i>filename</i> - logs to file named "filename". If not specified, logs to standard output.
+<li><b>SessionArchive</b> <i>path interval</i> - if set, archives all recordings to the path provided, and creates a new subdirectory every "interval" minutes. If interval is 0, the interval is 30 seconds.
+<li><b>DefaultTopic</b> <i>topic</i> - default server topic.
+<li><b>DefaultBPM</b> <i>bpm</i> - default server BPM (range 20 to 400)
+<li><b>DefaultBPI</b> <i>bpi</i> - default server BPI (range 2 to 1024)
+<li><b>AnonymousUsers</b> <i>yes|no|multi</i> - allow users to log in anonymously (if no, only users with a valid login/password will be allowed). If multi is specified, then multiple anonymous users from the same IP with the same nickname can log in.
+<li><b>AnonymousUsersCanChat</b> <i>yes|no</i> - allow anonymous users to send chat messages (if no, they can play, but can't contribute to the chat)
+<li><b>AnonymousMaskIP</b> <i>yes|no</i> - if yes, mask the last number in anonymous users' addresses. 
+<li><b>AllowHiddenUsers</b> <i>yes|no</i> - if no, users without any channels will appear in the user list. otherwise, they will not.
+<li><b>User</b> <i>username password [permissions]</i> - This adds an authorized user to the user list. If permissions are specified, the default permissions are overridden. Specify * for all access, or include any combination of the following to enable them:<ul>
+<li>C - allow this user to chat with other users
+<li>T - allow this user to set the server topic
+<li>B - allow this user to adjust BPM / BPI of server
+<li>K - allow this user to kick other people
+<li>R - allow this user to log in even when server is full
+<li>M - allow this user to log in multiple times
+</ul>
+<li><b>ACL</b> <i>mask allow|deny|reserve</i> - This adds an entry to the Access Control List (ACL). The configuration file can have any number of these, and the first match is used. <i>mask</i> is in the format of x.x.x.x/y, i.e. 192.168.0.0/16 or 66.88.120.240/28. allow specifies to allow connections, deny specifies to not, and reserve specifies to always allow (even if there are too many users connected).
+<li><b>SetKeepAlive</b> <i>n</i> - sets connection keepalive time to "n" seconds. Recommended value is 3.
+<li><B>SetPID</b> <i>filename</i> - writes process PID to "filename". Only valid on non-Windows systems.
+</ul>
+<BR><BR>
+Once you've set the configuration the way you think you will like it, you can run the server:<ul>
+<li>On OS X/Linux/FreeBSD (OS X will require you to open a terminal and go to the proper directory):<BR>
+./ninjamsrv configfilename.cfg
+<li>On Windows (after opening a command line, and going to the proper directory):<BR>
+ninjamsrv configfilename.cfg
+</ul>
+If you need ot change the configuration once the server is running, you can restart it by hitting R (on Windows), or by using the command "killall -HUP ninjamsrv" (on Linux/FreeBSD/OS X).
+
+<BR> <BR> <BR> <BR> <BR> <BR>
+
+
+</td>
+</tr>
+
+</table>
+<center>
+<font size=-1 color="#f3f3f3">Copyright &copy; 2005-2008
+<a href="http://www.cockos.com">Cockos Incorporated</a> and <a href="http://www.badmofo.org/brendevlog/">Brennan Underwood</a>
+</font>
+</center>
+</body>
+</html>

@@ -1,0 +1,6 @@
+usr/lib/libninjam-common.a
+usr/lib/pkgconfig/ninjam.pc
+usr/include/libninjam/WDL/*.h
+usr/include/libninjam/WDL/jnetlib/*.h
+usr/include/libninjam/ninjam/mpb.h
+usr/include/libninjam/ninjam/netmsg.h

@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: ninjam
+Description: Realtime Music Collaboration Software
+Requires:
+Version: @VERSION@
+Libs: -L${libdir} -lninjam-common
+Cflags: -I${includedir}/libninjam
