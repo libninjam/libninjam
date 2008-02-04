@@ -1,3 +1,11 @@
+ninjam (0.06-1ubuntu4) gutsy; urgency=low
+
+  * apply patch from jnc to get njclient.cpp to compile on amd64
+  * fixed WDL/sha.cpp so authentication on ninjam server works correctly
+    on amd64
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 04 Feb 2008 23:33:41 +0100
+
 ninjam (0.06-1ubuntu3) gutsy; urgency=low
 
   * add php script examples to retrieve the server status

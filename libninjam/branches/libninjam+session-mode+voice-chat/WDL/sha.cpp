@@ -69,7 +69,7 @@ void WDL_SHA1::reset()
 }
 
 
-#define SHA_ROTL(X,n) (((X) << (n)) | ((X) >> (32-(n))))
+#define SHA_ROTL(X,n) ((((X)&0xffffffffL) << (n)) | (((X)&0xffffffffL) >> (32-(n))))
 #define SHUFFLE() E = D; D = C; C = SHA_ROTL(B, 30); B = A; A = TEMP
 
 void WDL_SHA1::add(const void *data, int datalen)
