@@ -646,6 +646,28 @@ void usage()
     exit(1);
 }
 
+void openLog()
+{
+  if (g_logfilename.Get()[0])
+  {
+    g_logfp=fopen(g_logfilename.Get(),"at");
+    if (!g_logfp)
+      printf("Error opening log file '%s'\n",g_logfilename.Get());
+    else
+      logText("Opened log. NINJAM Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
+
+  }
+}
+
+void closeLog()
+{
+  if (g_logfp)
+  {
+    fclose(g_logfp);
+    g_logfp=0;
+  }
+}
+
 void logText(char *s, ...)
 {
     if (g_logfp) 
@@ -749,15 +771,7 @@ int main(int argc, char **argv)
   signal(SIGINT,sighandler);
 
 
-  if (g_logfilename.Get()[0])
-  {
-    g_logfp=fopen(g_logfilename.Get(),"at");
-    if (!g_logfp)
-      printf("Error opening log file '%s'\n",g_logfilename.Get());
-    else
-      logText("Opened log. NINJAM Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
-
-  }
+  openLog();
 
   logText("Server starting up...\n");
 
@@ -906,9 +920,10 @@ int main(int argc, char **argv)
         if (g_reloadconfig && strcmp(argv[1],"-"))
         {
           g_reloadconfig=0;
-
           if (!ReadConfig(argv[1]))
             onConfigChange(argc,argv);
+	  closeLog();
+	  openLog();
         }
 
         time_t now;
@@ -977,11 +992,7 @@ int main(int argc, char **argv)
   delete m_group;
   delete m_listener;
 
-  if (g_logfp)
-  {
-    fclose(g_logfp);
-    g_logfp=0;
-  }
+  closeLog();
 
   JNL::close_socketlib();
 	return 0;
