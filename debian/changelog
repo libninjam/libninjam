@@ -1,3 +1,9 @@
+ninjam (0.06-1ubuntu5) gutsy; urgency=low
+
+  * fixed output of month in server log file
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Fri, 08 Feb 2008 03:49:33 +0100
+
 ninjam (0.06-1ubuntu4) gutsy; urgency=low
 
   * apply patch from jnc to get njclient.cpp to compile on amd64
