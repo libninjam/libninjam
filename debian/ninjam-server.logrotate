@@ -5,4 +5,10 @@
   delaycompress
   missingok
   notifempty
+  sharedscripts
+  postrotate
+    if [ -f /var/run/ninjam-server.pid ]; then
+      /etc/init.d/ninjam-server reload > /dev/null
+    fi
+  endscript
 }
