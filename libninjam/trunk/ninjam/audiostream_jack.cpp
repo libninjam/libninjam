@@ -68,17 +68,18 @@ const int c_ppqn = 192;
 
 class audioStreamer_JACK : public audioStreamer
 {
-    public:
-	audioStreamer_JACK(const char* clientName,
-			   int nInputChannels,
-			   int nOutputChannels,
-			   SPLPROC proc);
-	~audioStreamer_JACK();
+public:
+  audioStreamer_JACK();
+  ~audioStreamer_JACK();
 
-	int process( jack_nframes_t nframes );
-	void timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos );
-
-
+  bool init(const char* clientName,
+	    int nInputChannels,
+	    int nOutputChannels,
+	    SPLPROC proc);
+  int process( jack_nframes_t nframes );
+  void timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos );
+  
+  
   const char *GetChannelName(int idx) {
     return GetInputChannelName(idx);
   }
@@ -104,7 +105,6 @@ private:
   jack_port_t **_out;
   float **_inports;
   float **_outports;
-  char _channelname[20];
   SPLPROC splproc;
   NJClient *njc;
   WDL_Mutex _process_lock;
@@ -122,10 +122,10 @@ process_cb( jack_nframes_t nframes, audioStreamer_JACK *as ) {
 }
 
 void jack_timebase_cb(jack_transport_state_t state,
-                                     jack_nframes_t nframes,
-                                     jack_position_t *pos,
-                                     int new_pos,
-                                     audioStreamer_JACK *as)
+		      jack_nframes_t nframes,
+		      jack_position_t *pos,
+		      int new_pos,
+		      audioStreamer_JACK *as)
 {
     as->timebase_cb( state, nframes, pos, new_pos );
 }
@@ -133,49 +133,15 @@ void jack_timebase_cb(jack_transport_state_t state,
 
 
 //////////////// JACK driver
-audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
-				       int nInputChannels,
-				       int nOutputChannels,
-				       SPLPROC proc)
-{ 
-
-    njc = NULL;
-    splproc = proc;
-
-    if ((client = jack_client_new(clientName)) == 0) {
-	fprintf (stderr, "jack server not running?\n");
-	exit(20);
-    }
-
-    jack_set_process_callback (client, (JackProcessCallback) process_cb, this);
-
-    jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
-
-    _out = new jack_port_t*[nOutputChannels];
-    _outports = new float*[nOutputChannels];
-    for (unsigned i=0; i<nOutputChannels; i++) {
-      char name[10];
-      snprintf(name, sizeof(name), "out%d", i+1);
-      _out[i] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-    }
-
-    _in = new jack_port_t*[nInputChannels];
-    _inports = new float*[nInputChannels];
-    for (unsigned i=0; i<nInputChannels; i++) {
-      char name[10];
-      snprintf(name, sizeof(name), "in%d", i+1);
-      _in[i] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
-    }
-
-    if (jack_activate (client)) {
-	fprintf (stderr, "cannot activate client");
-	exit(20);
-    }
-
-    m_innch = nInputChannels;
-    m_outnch = nOutputChannels;
-    m_srate = jack_get_sample_rate( client );
-    m_bps = 32;
+audioStreamer_JACK::audioStreamer_JACK()
+  : client(NULL),
+    _in(NULL),
+    _out(NULL),
+    _inports(NULL),
+    _outports(NULL),
+    splproc(NULL),
+    njc(NULL)
+{
 }
 
 audioStreamer_JACK::~audioStreamer_JACK() 
@@ -187,6 +153,74 @@ audioStreamer_JACK::~audioStreamer_JACK()
     delete[] _inports;
     delete[] _out;
     delete[] _outports;
+}
+
+bool audioStreamer_JACK::init(const char* clientName,
+			      int nInputChannels,
+			      int nOutputChannels,
+			      SPLPROC proc)
+{
+
+    njc = NULL;
+    splproc = proc;
+
+    if (client) {
+      jack_client_close(client);
+      client = NULL;
+    }
+    if ((client = jack_client_new(clientName)) == 0) {
+      fprintf (stderr, "jack server not running?\n");
+      return false;
+      // exit(20);
+    }
+    
+    jack_set_process_callback (client, (JackProcessCallback) process_cb, this);
+
+    jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
+    
+    if (_out) {
+      delete[] _out;
+      _out = NULL;
+    }
+    _out = new jack_port_t*[nOutputChannels];
+    if (_outports) {
+      delete[] _outports;
+      _outports = NULL;
+    }
+    _outports = new float*[nOutputChannels];
+    for (unsigned i=0; i<nOutputChannels; i++) {
+      char name[10];
+      snprintf(name, sizeof(name), "out%d", i+1);
+      _out[i] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+    }
+
+    if (_in) {
+      delete[] _in;
+      _in = NULL;
+    }
+    _in = new jack_port_t*[nInputChannels];
+    if (_inports) {
+      delete[] _inports;
+      _inports = NULL;
+    }
+    _inports = new float*[nInputChannels];
+    for (unsigned i=0; i<nInputChannels; i++) {
+      char name[10];
+      snprintf(name, sizeof(name), "in%d", i+1);
+      _in[i] = jack_port_register (client, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
+    }
+
+    if (jack_activate (client)) {
+      fprintf (stderr, "cannot activate client\n");
+      return false;
+      //exit(20);
+    }
+
+    m_innch = nInputChannels;
+    m_outnch = nOutputChannels;
+    m_srate = jack_get_sample_rate( client );
+    m_bps = 32;
+    return true;
 }
 
 bool audioStreamer_JACK::addInputChannel()
@@ -380,10 +414,15 @@ audioStreamer *create_audioStreamer_JACK(const char* clientName,
 					 SPLPROC proc,
 					 NJClient *njclient)
 {
-  audioStreamer_JACK *au = new audioStreamer_JACK(clientName,
-						  nInputChannels,
-						  nOutputChannels,
-						  proc);
-  au->set_njclient(njclient);
-  return au;
+  audioStreamer_JACK *au = new audioStreamer_JACK();
+  if (!au->init(clientName,
+		nInputChannels,
+		nOutputChannels,
+		proc)) {
+    delete au;
+    return NULL;
+  } else {
+    au->set_njclient(njclient);
+    return au;
+  }
 }

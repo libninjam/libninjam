@@ -1,3 +1,10 @@
+ninjam (0.06-1ubuntu7) gutsy; urgency=low
+
+  * make create_audioStreamer_JACK return NULL, if the jack connection 
+    cannot be successfully established.
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 11 Feb 2008 14:41:12 +0100
+
 ninjam (0.06-1ubuntu6) gutsy; urgency=low
 
   * reopen server log file on SIGHUP so that logrotate can work properly
