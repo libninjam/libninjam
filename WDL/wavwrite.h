@@ -1,47 +1,29 @@
 /*
     WDL - wavwrite.h
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005 and later, Cockos Incorporated
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
-    the following  licenses:
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
     
-      This software is provided 'as-is', without any express or implied
-      warranty.  In no event will the authors be held liable for any damages
-      arising from the use of this software.
 
-      Permission is granted to anyone to use this software for any purpose,
-      including commercial applications, and to alter it and redistribute it
-      freely, subject to the following restrictions:
-
-      1. The origin of this software must not be misrepresented; you must not
-         claim that you wrote the original software. If you use this software
-         in a product, an acknowledgment in the product documentation would be
-         appreciated but is not required.
-      2. Altered source versions must be plainly marked as such, and must not be
-         misrepresented as being the original software.
-      3. This notice may not be removed or altered from any source distribution.
-      
-
-    or:
-
-      WDL is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 2 of the License, or
-      (at your option) any later version.
-
-      WDL is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-
-      You should have received a copy of the GNU General Public License
-      along with WDL; if not, write to the Free Software
-      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
 
-  This file provides a simple class for writing PCM WAV files.
+  This file provides a simple class for writing basic 16 or 24 bit PCM WAV files.
  
 */
 
@@ -52,6 +34,7 @@
 
 #include <stdio.h>
 #include "pcmfmtcvt.h"
+#include "wdlstring.h"
 
 class WaveWriter
 {
@@ -77,6 +60,7 @@ class WaveWriter
 
     int Open(const char *filename, int bps, int nch, int srate, int allow_append=1)
     {
+      m_fn.Set(filename);
       m_fp=0;
       if (allow_append)
       {
@@ -95,6 +79,8 @@ class WaveWriter
       if (!m_fp)
       {
         m_fp=fopen(filename,"wb");
+        if (!m_fp) return 0;
+
         char tbuf[44];
         fwrite(tbuf,1,44,m_fp); // room for header
       }
@@ -162,7 +148,15 @@ class WaveWriter
       }
     }
 
+    const char *GetFileName() { return m_fn.Get(); }
+
     int Status() { return !!m_fp; }
+
+    int BytesWritten()
+    {
+      if (m_fp) return ftell(m_fp)-44;
+      return 0;
+    }
 
     void WriteRaw(void *buf, int len)
     {
@@ -198,10 +192,42 @@ class WaveWriter
       }
     }
 
-    void WriteFloatsNI(float **samples, int offs, int nsamples)
+    void WriteDoubles(double *samples, int nsamples)
     {
       if (!m_fp) return;
-      float *tmpptrs[2]={samples[0]+offs,m_nch>1?samples[1]+offs:NULL};
+
+      if (m_bps == 16)
+      {
+        while (nsamples-->0)
+        {
+          short a;
+          double_TO_INT16(a,*samples);
+          unsigned char c=a&0xff;
+          fwrite(&c,1,1,m_fp);
+          c=a>>8;
+          fwrite(&c,1,1,m_fp);
+          samples++;
+        }
+      }
+      else if (m_bps == 24)
+      {
+        while (nsamples-->0)
+        {
+          unsigned char a[3];
+          double_to_i24(samples,a);
+          fwrite(a,1,3,m_fp);
+          samples++;
+        }
+      }
+    }
+
+    void WriteFloatsNI(float **samples, int offs, int nsamples, int nchsrc=0)
+    {
+      if (!m_fp) return;
+
+      if (nchsrc < 1) nchsrc=m_nch;
+
+      float *tmpptrs[2]={samples[0]+offs,m_nch>1?(nchsrc>1?samples[1]+offs:samples[0]+offs):NULL};
 
       if (m_bps == 16)
       {
@@ -236,6 +262,48 @@ class WaveWriter
       }
     }
 
+    void WriteDoublesNI(double **samples, int offs, int nsamples, int nchsrc=0)
+    {
+      if (!m_fp) return;
+
+      if (nchsrc < 1) nchsrc=m_nch;
+
+      double *tmpptrs[2]={samples[0]+offs,m_nch>1?(nchsrc>1?samples[1]+offs:samples[0]+offs):NULL};
+
+      if (m_bps == 16)
+      {
+        while (nsamples-->0)
+        {          
+          int ch;
+          for (ch = 0; ch < m_nch; ch ++)
+          {
+            short a;
+            double_TO_INT16(a,tmpptrs[ch][0]);
+            unsigned char c=a&0xff;
+            fwrite(&c,1,1,m_fp);
+            c=a>>8;
+            fwrite(&c,1,1,m_fp);
+            tmpptrs[ch]++;
+          }
+        }
+      }
+      else if (m_bps == 24)
+      {
+        while (nsamples-->0)
+        {
+          int ch;
+          for (ch = 0; ch < m_nch; ch ++)
+          {
+            unsigned char a[3];
+            double_to_i24(tmpptrs[ch],a);
+            fwrite(a,1,3,m_fp);
+            tmpptrs[ch]++;
+          }
+        }
+      }
+    }
+
+
     int get_nch() { return m_nch; } 
     int get_srate() { return m_srate; }
     int get_bps() { return m_bps; }
@@ -243,6 +311,7 @@ class WaveWriter
   private:
     FILE *m_fp;
     int m_bps,m_nch,m_srate;
+    WDL_String m_fn;
 };
 
 

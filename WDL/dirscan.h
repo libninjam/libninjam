@@ -1,42 +1,23 @@
 /*
     WDL - dirscan.h
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005 and later Cockos Incorporated
+  
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
-    the following  licenses:
-    
-      This software is provided 'as-is', without any express or implied
-      warranty.  In no event will the authors be held liable for any damages
-      arising from the use of this software.
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
 
-      Permission is granted to anyone to use this software for any purpose,
-      including commercial applications, and to alter it and redistribute it
-      freely, subject to the following restrictions:
-
-      1. The origin of this software must not be misrepresented; you must not
-         claim that you wrote the original software. If you use this software
-         in a product, an acknowledgment in the product documentation would be
-         appreciated but is not required.
-      2. Altered source versions must be plainly marked as such, and must not be
-         misrepresented as being the original software.
-      3. This notice may not be removed or altered from any source distribution.
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
       
-
-    or:
-
-      WDL is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 2 of the License, or
-      (at your option) any later version.
-
-      WDL is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-
-      You should have received a copy of the GNU General Public License
-      along with WDL; if not, write to the Free Software
-      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
@@ -45,6 +26,7 @@
   (and somewhat portable) directory reading class. On non-Win32 systems it wraps
   opendir()/readdir()/etc. On Win32, it uses FindFirst*, and supports wildcards as 
   well.
+
  
 */
 
@@ -52,10 +34,11 @@
 #ifndef _WDL_DIRSCAN_H_
 #define _WDL_DIRSCAN_H_
 
-#include "string.h"
+#include "wdlstring.h"
 
 #ifndef _WIN32
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #endif
 
@@ -112,7 +95,7 @@ class WDL_DirScan
 #else
       m_ent=0;
       m_h=opendir(scanstr.Get());
-      return !m_h;
+      return !m_h || Next();
 #endif
     }
     int Next() // returns 0 on success
@@ -165,6 +148,23 @@ class WDL_DirScan
     void GetCurrentLastWriteTime(FILETIME *ft) { *ft = m_fd.ftLastWriteTime; }
     void GetCurrentLastAccessTime(FILETIME *ft) { *ft = m_fd.ftLastAccessTime; }
     void GetCurrentCreationTime(FILETIME *ft) { *ft = m_fd.ftCreationTime; }
+#elif defined(_WDL_SWELL_H_)
+
+  // todo: compat for more of these functions
+  
+  void GetCurrentLastWriteTime(FILETIME *ft) 
+  { 
+    WDL_String tmp;
+    GetCurrentFullFN(&tmp);
+    struct stat st;
+    stat(tmp.Get(),&st);
+    unsigned long long a=(unsigned long long)st.st_mtime; // seconds since january 1st, 1970
+    a+=(60*60*24*(365*4+1)/4)*(1970-1601); // this is approximate
+    a*=1000*10000; // seconds to 1/10th microseconds (100 nanoseconds)
+    ft->dwLowDateTime=a & 0xffffffff;
+    ft->dwHighDateTime=a>>32;
+  }
+  
 #endif
 
   private:

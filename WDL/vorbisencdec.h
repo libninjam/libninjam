@@ -1,42 +1,24 @@
 /*
     WDL - vorbisencdec.h
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005 and later, Cockos Incorporated
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
-    the following  licenses:
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
     
-      This software is provided 'as-is', without any express or implied
-      warranty.  In no event will the authors be held liable for any damages
-      arising from the use of this software.
 
-      Permission is granted to anyone to use this software for any purpose,
-      including commercial applications, and to alter it and redistribute it
-      freely, subject to the following restrictions:
-
-      1. The origin of this software must not be misrepresented; you must not
-         claim that you wrote the original software. If you use this software
-         in a product, an acknowledgment in the product documentation would be
-         appreciated but is not required.
-      2. Altered source versions must be plainly marked as such, and must not be
-         misrepresented as being the original software.
-      3. This notice may not be removed or altered from any source distribution.
-      
-
-    or:
-
-      WDL is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 2 of the License, or
-      (at your option) any later version.
-
-      WDL is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-
-      You should have received a copy of the GNU General Public License
-      along with WDL; if not, write to the Free Software
-      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
@@ -45,6 +27,9 @@
   It is a wrapper around what their SDKs expose, which is not too easy to use.
 
   This stuff is pretty limited and simple, but works, usually.
+
+  For full control you probably want to #define VORBISENC_WANT_FULLCONFIG
+  but for compatibility with some older code, it's left disabled here.
  
 */
 
@@ -53,9 +38,40 @@
 
 #include "vorbis/vorbisenc.h"
 #include "vorbis/codec.h"
-#include "queue.h"
 
-class VorbisDecoder
+class VorbisDecoderInterface
+{
+public:
+  virtual ~VorbisDecoderInterface(){}
+  virtual int GetSampleRate()=0;
+  virtual int GetNumChannels()=0;
+  virtual void *DecodeGetSrcBuffer(int srclen)=0;
+  virtual void DecodeWrote(int srclen)=0;
+  virtual void Reset()=0;
+  virtual int Available()=0;
+  virtual float *Get()=0;
+  virtual void Skip(int amt)=0;
+};
+
+class VorbisEncoderInterface
+{
+public:
+  virtual ~VorbisEncoderInterface(){}
+  virtual void Encode(float *in, int inlen, int advance=1, int spacing=1)=0; // length in sample (PAIRS)
+  virtual int isError()=0;
+  virtual int Available()=0;
+  virtual void *Get()=0;
+  virtual void Advance(int)=0;
+  virtual void Compact()=0;
+  virtual void reinit(int bla=0)=0;
+};
+
+
+#ifndef WDL_VORBIS_INTERFACE_ONLY
+
+#include "../WDL/queue.h"
+
+class VorbisDecoder : public VorbisDecoderInterface
 {
   public:
     VorbisDecoder()
@@ -162,6 +178,22 @@ class VorbisDecoder
 			  }
 		  }
     }
+    int Available()
+    {
+      return m_samples_used;
+    }
+    float *Get()
+    {
+      return (float *)m_samples.Get();
+    }
+    void Skip(int amt)
+    {
+      float *sptr=(float *)m_samples.Get();
+      m_samples_used-=amt;
+      if (m_samples_used>0)
+        memcpy(sptr,sptr+amt,m_samples_used*sizeof(float));
+      else m_samples_used=0;
+    }
 
     void Reset()
     {
@@ -197,10 +229,16 @@ class VorbisDecoder
 };
 
 
-class VorbisEncoder
+class VorbisEncoder : public VorbisEncoderInterface
 {
 public:
+#ifdef VORBISENC_WANT_FULLCONFIG
+  VorbisEncoder(int srate, int nch, int serno, float qv, int cbr=-1, int minbr=-1, int maxbr=-1)
+#elif defined(VORBISENC_WANT_QVAL)
+  VorbisEncoder(int srate, int nch, float qv, int serno)
+#else
   VorbisEncoder(int srate, int nch, int bitrate, int serno)
+#endif
   {
     m_ds=0;
 
@@ -212,34 +250,48 @@ public:
     m_nch=nch;
     vorbis_info_init(&vi);
 
-    float qv=0.0;
-    if (nch == 2) bitrate=  (bitrate*5)/8;
-    // at least for mono 44khz
-    //-0.1 = ~40kbps
-    //0.0 == ~64kbps
-    //0.1 == 75
-    //0.3 == 95
-    //0.5 == 110
-    //0.75== 140
-    //1.0 == 240
-    if (bitrate <= 32)
+#ifdef VORBISENC_WANT_FULLCONFIG
+
+    if (cbr > 0)
     {
-      m_ds=1;
-      bitrate*=2;
+      m_err=vorbis_encode_init(&vi,nch,srate,maxbr*1000,cbr*1000,minbr*1000);
     }
+    else
+      m_err=vorbis_encode_init_vbr(&vi,nch,srate,qv);
+
+#else
+
+  #ifndef VORBISENC_WANT_QVAL
+      float qv=0.0;
+      if (nch == 2) bitrate=  (bitrate*5)/8;
+      // at least for mono 44khz
+      //-0.1 = ~40kbps
+      //0.0 == ~64kbps
+      //0.1 == 75
+      //0.3 == 95
+      //0.5 == 110
+      //0.75== 140
+      //1.0 == 240
+      if (bitrate <= 32)
+      {
+        m_ds=1;
+        bitrate*=2;
+      }
    
-    if (bitrate < 40) qv=-0.1f;
-    else if (bitrate < 64) qv=-0.10f + (bitrate-40)*(0.10f/24.0f);
-    else if (bitrate < 75) qv=(bitrate-64)*(0.1f/9.0f);
-    else if (bitrate < 95) qv=0.1f+(bitrate-75)*(0.2f/20.0f);
-    else if (bitrate < 110) qv=0.3f+(bitrate-95)*(0.2f/15.0f);
-    else if (bitrate < 140) qv=0.5f+(bitrate-110)*(0.25f/30.0f);
-    else qv=0.75f+(bitrate-140)*(0.25f/100.0f);
+      if (bitrate < 40) qv=-0.1f;
+      else if (bitrate < 64) qv=-0.10f + (bitrate-40)*(0.10f/24.0f);
+      else if (bitrate < 75) qv=(bitrate-64)*(0.1f/9.0f);
+      else if (bitrate < 95) qv=0.1f+(bitrate-75)*(0.2f/20.0f);
+      else if (bitrate < 110) qv=0.3f+(bitrate-95)*(0.2f/15.0f);
+      else if (bitrate < 140) qv=0.5f+(bitrate-110)*(0.25f/30.0f);
+      else qv=0.75f+(bitrate-140)*(0.25f/100.0f);
 
-    if (qv<-0.10f)qv=-0.10f;
-    if (qv>1.0f)qv=1.0f;
+      if (qv<-0.10f)qv=-0.10f;
+      if (qv>1.0f)qv=1.0f;
+  #endif
 
-    m_err=vorbis_encode_init_vbr(&vi,nch,srate>>m_ds,qv);
+      m_err=vorbis_encode_init_vbr(&vi,nch,srate>>m_ds,qv);
+#endif
 
     vorbis_comment_init(&vc);
     vorbis_analysis_init(&vd,&vi);
@@ -338,6 +390,23 @@ public:
 
   int isError() { return m_err; }
 
+  int Available()
+  {
+    return outqueue.Available();
+  }
+  void *Get()
+  {
+    return outqueue.Get();
+  }
+  void Advance(int amt)
+  {
+    outqueue.Advance(amt);
+  }
+
+  void Compact()
+  {
+    outqueue.Compact();
+  }
 
   ~VorbisEncoder()
   {
@@ -363,5 +432,6 @@ private:
 
 };
 
+#endif//WDL_VORBIS_INTERFACE_ONLY
 
 #endif//_VORBISENCDEC_H_
