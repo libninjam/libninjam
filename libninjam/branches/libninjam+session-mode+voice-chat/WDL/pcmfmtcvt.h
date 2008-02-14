@@ -1,42 +1,23 @@
 /*
     WDL - pcmfmtcvt.h
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005 and later, Cockos Incorporated
+   
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
-    the following  licenses:
-    
-      This software is provided 'as-is', without any express or implied
-      warranty.  In no event will the authors be held liable for any damages
-      arising from the use of this software.
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
 
-      Permission is granted to anyone to use this software for any purpose,
-      including commercial applications, and to alter it and redistribute it
-      freely, subject to the following restrictions:
-
-      1. The origin of this software must not be misrepresented; you must not
-         claim that you wrote the original software. If you use this software
-         in a product, an acknowledgment in the product documentation would be
-         appreciated but is not required.
-      2. Altered source versions must be plainly marked as such, and must not be
-         misrepresented as being the original software.
-      3. This notice may not be removed or altered from any source distribution.
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
       
-
-    or:
-
-      WDL is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 2 of the License, or
-      (at your option) any later version.
-
-      WDL is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-
-      You should have received a copy of the GNU General Public License
-      along with WDL; if not, write to the Free Software
-      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
@@ -63,9 +44,15 @@ static inline int float2int(double d)
 
 #define float_TO_INT16(out,in) \
 		if ((in)<0.0) { if ((in) <= -1.0) (out) = -32768; else (out) = (short) (float2int(((in) * 32768.0)-0.5)); } \
-		else { if ((in) >= 1.0) (out) = 32767; else (out) = (short) float2int((in) * 32767.0 + 0.5); }
+		else { if ((in) >= (32766.5f/32768.0f)) (out) = 32767; else (out) = (short) float2int((in) * 32768.0 + 0.5); }
 
-#define INT16_TO_float(out,in) { if ((in) < 0) (out) = (float)(((double)in)/32768.0); else (out) = (float)(((double)in)/32767.0); }
+#define INT16_TO_float(out,in) { (out) = (float)(((double)in)/32768.0);  }
+
+#define double_TO_INT16(out,in) \
+		if ((in)<0.0) { if ((in) <= -1.0) (out) = -32768; else (out) = (short) (float2int(((in) * 32768.0)-0.5)); } \
+		else { if ((in) >= (32766.5/32768.0)) (out) = 32767; else (out) = (short) float2int((in) * 32768.0 + 0.5); }
+
+#define INT16_TO_double(out,in) { (out) = (((double)in)/32768.0); }
 
 
 static inline void i32_to_float(int i32, float *p)
@@ -78,26 +65,34 @@ static inline void float_to_i32(float *vv, int *i32)
   float v = *vv;
   if (v < 0.0) 
   {
-	  if (v < -1.0)
-	  {
-		*i32 = 0x80000000;
-	  }
-	  else
-	  {
-    		*i32=float2int(v*2147483648.0-0.5);
-	  }
+	  if (v < -1.0) *i32 = 0x80000000;
+	  else *i32=float2int(v*2147483648.0-0.5);
   }
   else
   {
-	  if (v >= 1.0)
-	  {
-		*i32 = 0x7FFFFFFF;
-	  }
-	  else
-	  {
-  		
-    		*i32=float2int(v*2147483648.0+0.5);
-	  }
+	  if (v >= (2147483646.5f/2147483648.0f)) *i32 = 0x7FFFFFFF;
+	  else *i32=float2int(v*2147483648.0+0.5);
+  }
+}
+
+
+static inline void i32_to_double(int i32, double *p)
+{
+  *p = ((((double) i32)) * (1.0 / (2147483648.0)));
+}
+
+static inline void double_to_i32(double *vv, int *i32)
+{
+  double v = *vv;
+  if (v < 0.0) 
+  {
+	  if (v < -1.0) *i32 = 0x80000000;
+	  else *i32=float2int(v*2147483648.0-0.5);
+  }
+  else
+  {
+	  if (v >= (2147483646.5/2147483648.0)) *i32 = 0x7FFFFFFF;
+	  else *i32=float2int(v*2147483648.0+0.5);
   }
 }
 
@@ -114,7 +109,7 @@ static inline void i24_to_float(unsigned char *i24, float *p)
   else 
   {
 	  val&=0xFFFFFF;
-  	  *p = (float) ((((double) val)) * (1.0 / (8388607.0)));
+  	  *p = (float) ((((double) val)) * (1.0 / (8388608.0)));
   }
 
 }
@@ -139,7 +134,7 @@ static inline void float_to_i24(float *vv, unsigned char *i24)
   }
   else
   {
-	  if (v >= 1.0)
+	  if (v >= (8388606.5f/8388608.0f))
 	  {
     		i24[0]=i24[1]=0xff;
     		i24[2]=0x7f;
@@ -147,7 +142,7 @@ static inline void float_to_i24(float *vv, unsigned char *i24)
 	  else
 	  {
   		
-    		int i=float2int(v*8388607+0.5);
+    		int i=float2int(v*8388608.0+0.5);
     		i24[0]=(i)&0xff;
     		i24[1]=(i>>8)&0xff;
     		i24[2]=(i>>16)&0xff;
@@ -155,6 +150,58 @@ static inline void float_to_i24(float *vv, unsigned char *i24)
   }
 }
 
+
+static inline void i24_to_double(unsigned char *i24, double *p)
+{
+  int val=(i24[0]) | (i24[1]<<8) | (i24[2]<<16);
+  if (val&0x800000) 
+  {
+	  val|=0xFF000000;
+  	  *p = ((((double) val)) * (1.0 / (8388608.0)));
+  }
+  else 
+  {
+	  val&=0xFFFFFF;
+  	  *p = ((((double) val)) * (1.0 / (8388608.0)));
+  }
+
+}
+
+static inline void double_to_i24(double *vv, unsigned char *i24)
+{
+  double v = *vv;
+  if (v < 0.0) 
+  {
+	  if (v < -1.0)
+	  {
+    		i24[0]=i24[1]=0x00;
+    		i24[2]=0x80;
+	  }
+	  else
+	  {
+    		int i=float2int(v*8388608.0-0.5);
+    		i24[0]=(i)&0xff;
+    		i24[1]=(i>>8)&0xff;
+    		i24[2]=(i>>16)&0xff;
+	  }
+  }
+  else
+  {
+	  if (v >= (8388606.5/8388608.0))
+	  {
+    		i24[0]=i24[1]=0xff;
+    		i24[2]=0x7f;
+	  }
+	  else
+	  {
+  		
+    		int i=float2int(v*8388608.0+0.5);
+    		i24[0]=(i)&0xff;
+    		i24[1]=(i>>8)&0xff;
+    		i24[2]=(i>>16)&0xff;
+	  }
+  }
+}
 
 static void pcmToFloats(void *src, int items, int bps, int src_spacing, float *dest, int dest_spacing)
 {
@@ -226,6 +273,76 @@ static void floatsToPcm(float *src, int src_spacing, int items, void *dest, int 
   }
 }
 
+
+static void pcmToDoubles(void *src, int items, int bps, int src_spacing, double *dest, int dest_spacing, int byteadvancefor24=0)
+{
+  if (bps == 32)
+  {
+    int *i1=(int *)src;
+    while (items--)
+    {          
+      i32_to_double(*i1,dest);
+      i1+=src_spacing;
+      dest+=dest_spacing;      
+    }
+  }
+  else if (bps == 24)
+  {
+    unsigned char *i1=(unsigned char *)src;
+    int adv=3*src_spacing+byteadvancefor24;
+    while (items--)
+    {          
+      i24_to_double(i1,dest);
+      dest+=dest_spacing;
+      i1+=adv;
+    }
+  }
+  else if (bps == 16)
+  {
+    short *i1=(short *)src;
+    while (items--)
+    {          
+      INT16_TO_double(*dest,*i1);
+      i1+=src_spacing;
+      dest+=dest_spacing;
+    }
+  }
+}
+
+static void doublesToPcm(double *src, int src_spacing, int items, void *dest, int bps, int dest_spacing, int byteadvancefor24=0)
+{
+  if (bps==32)
+  {
+    int *o1=(int*)dest;
+    while (items--)
+    {
+      double_to_i32(src,o1);
+      src+=src_spacing;
+      o1+=dest_spacing;
+    }
+  }
+  else if (bps == 24)
+  {
+    unsigned char *o1=(unsigned char*)dest;
+    int adv=dest_spacing*3+byteadvancefor24;
+    while (items--)
+    {
+      double_to_i24(src,o1);
+      src+=src_spacing;
+      o1+=adv;
+    }
+  }
+  else if (bps==16)
+  {
+    short *o1=(short*)dest;
+    while (items--)
+    {
+      double_TO_INT16(*o1,*src);
+      src+=src_spacing;
+      o1+=dest_spacing;
+    }
+  }
+}
 
 static int resampleLengthNeeded(int src_srate, int dest_srate, int dest_len, double *state)
 {
