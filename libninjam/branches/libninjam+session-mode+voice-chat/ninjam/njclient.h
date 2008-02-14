@@ -66,7 +66,7 @@
 #endif
 #include <stdio.h>
 #include <time.h>
-#include <WDL/string.h>
+#include <WDL/wdlstring.h>
 #include <WDL/ptrlist.h>
 #include <WDL/jnetlib/jnetlib.h>
 #include <WDL/sha.h>
@@ -81,9 +81,11 @@
 class I_NJEncoder;
 class RemoteDownload;
 class RemoteUser;
+class RemoteUser_Channel;
 class Local_Channel;
 class DecodeState;
 class BufferQueue;
+class DecodeMediaBuffer;
 
 // #define NJCLIENT_NO_XMIT_SUPPORT // might want to do this for njcast :)
 //  it also removes mixed ogg writing support
@@ -105,7 +107,7 @@ public:
 
   int IsAudioRunning() { return m_audio_enable; }
   // call AudioProc, (and only AudioProc) from your audio thread
-  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate); // len is number of sample pairs or samples
+  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, bool justmonitor=false, bool isPlaying=true, bool isSeek=false, double cursessionpos=-1.0); // len is number of sample pairs or samples
 
 
   // basic configuration
@@ -123,7 +125,7 @@ public:
   int   config_play_prebuffer; // -1 means play instantly, 0 means play when full file is there, otherwise refers to how many
                                // bytes of compressed source to have before play. the default value is 4096.
 
-  float GetOutputPeak();
+  float GetOutputPeak(int ch=-1);
 
   enum { NJC_STATUS_DISCONNECTED=-3,NJC_STATUS_INVALIDAUTH=-2, NJC_STATUS_CANTCONNECT=-1, NJC_STATUS_OK=0, NJC_STATUS_PRECONNECT};
   int GetStatus();
@@ -145,35 +147,20 @@ public:
   char *GetUserState(int idx, float *vol=0, float *pan=0, bool *mute=0);
   void SetUserState(int idx, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute);
 
-  float GetUserChannelPeak(int useridx, int channelidx);
-  char *GetUserChannelState(int useridx,
-			    int channelidx,
-			    bool *sub=0,
-			    float *vol=0,
-			    float *pan=0,
-			    bool *mute=0,
-			    bool *solo=0,
-			    int *outch=0,
-			    bool *stereoout=0,
-			    int *mode=0);
-  void SetUserChannelState(int useridx, int channelidx,
-			   bool setsub, bool sub,
-			   bool setvol, float vol,
-			   bool setpan, float pan,
-			   bool setmute, bool mute,
-			   bool setsolo, bool solo,
-			   bool setoutch, int outch,
-			   bool setstereout, bool stereoout);
+  float GetUserChannelPeak(int useridx, int channelidx, int whichch=-1);
+  double GetUserSessionPos(int useridx, time_t *lastupdatetime, double *maxlen);
+  char *GetUserChannelState(int useridx, int channelidx, bool *sub=0, float *vol=0, float *pan=0, bool *mute=0, bool *solo=0, int *outchannel=0, int *flags=0);
+  void SetUserChannelState(int useridx, int channelidx, bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo, bool setoutch=false, int outchannel=0);
   int EnumUserChannels(int useridx, int i); // returns <0 if out of channels. start with i=0, and go upwards
 
   int GetMaxLocalChannels() { return m_max_localch; }
   void DeleteLocalChannel(int ch);
   int EnumLocalChannels(int i);
-  float GetLocalChannelPeak(int ch);
+  float GetLocalChannelPeak(int ch, int whichch=-1);
   void SetLocalChannelProcessor(int ch, void (*cbf)(float *, int ns, void *), void *inst);
   void GetLocalChannelProcessor(int ch, void **func, void **inst);
-  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast, bool setmode, int mode);
-  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast, int *mode);
+  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast, bool setoutch=false, int outch=0, bool setflags=false, int flags=0);
+  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast, int *outch=0, int *flags=0);
   void SetLocalChannelMonitoring(int ch, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo);
   int GetLocalChannelMonitoring(int ch, float *vol, float *pan, bool *mute, bool *solo); // 0 on success
   void NotifyServerOfChannelChange(); // call after any SetLocalChannel* that occur after initial connect
@@ -211,16 +198,17 @@ public:
   int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
   int ChannelMixer_User32;
 
+  WDL_Mutex m_remotechannel_rd_mutex;
 
 protected:
-  double output_peaklevel;
+  double output_peaklevel[2];
 
   void _reinit();
 
   void makeFilenameFromGuid(WDL_String *s, unsigned char *guid);
 
   void updateBPMinfo(int bpm, int bpi);
-  void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor=0);
+  void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor, bool isPlaying, bool isSeek, double cursessionpos);
   void on_new_interval();
 
   void writeLog(char *fmt, ...);
@@ -255,13 +243,14 @@ protected:
   int m_interval_pos, m_metronome_state, m_metronome_tmp,m_metronome_interval;
   double m_metronome_pos;
 
-  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc=0);
+  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc=0, DecodeMediaBuffer *decbuf=NULL);
 
   BufferQueue *m_wavebq;
 
   WDL_PtrList<Local_Channel> m_locchannels;
 
-  void mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay);
+  void mixInChannel(RemoteUser_Channel *userchan, bool muted, float vol, float pan, float **outbuf, int out_channel, 
+                    int len, int srate, int outnch, int offs, double vudecay, bool isPlaying, bool isSeek, double playPos);
 
   WDL_Mutex m_users_cs, m_locchan_cs, m_log_cs, m_misc_cs;
   Net_Connection *m_netcon;

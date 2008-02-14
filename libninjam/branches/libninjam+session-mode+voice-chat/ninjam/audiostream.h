@@ -63,7 +63,7 @@ class audioStreamer
 };
 
 
-typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
+typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, bool hasTransportInfo, bool isPlaying, bool isSeek, double cursessionpos);
 
 
 #ifdef _WIN32
