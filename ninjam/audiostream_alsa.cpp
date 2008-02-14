@@ -353,7 +353,7 @@ void audioStreamer_asiosim::tp()
       pcmToFloats(m_buf,spllen,m_bps,2,inptrs[0],1);
       pcmToFloats(m_buf+(m_bps/8),spllen,m_bps,2,inptrs[1],1);
 
-      if (m_splproc) m_splproc(inptrs,2,outptrs,2,spllen,m_srate);
+      if (m_splproc) m_splproc(inptrs,2,outptrs,2,spllen,m_srate,false,false,false,-1.0);
 
       floatsToPcm(outptrs[0],1,spllen,m_buf,m_bps,2);
       floatsToPcm(outptrs[1],1,spllen,m_buf+(m_bps/8),m_bps,2);

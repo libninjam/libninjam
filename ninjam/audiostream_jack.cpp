@@ -122,10 +122,10 @@ process_cb( jack_nframes_t nframes, audioStreamer_JACK *as ) {
 }
 
 void jack_timebase_cb(jack_transport_state_t state,
-                                     jack_nframes_t nframes,
-                                     jack_position_t *pos,
-                                     int new_pos,
-                                     audioStreamer_JACK *as)
+		      jack_nframes_t nframes,
+		      jack_position_t *pos,
+		      int new_pos,
+		      audioStreamer_JACK *as)
 {
     as->timebase_cb( state, nframes, pos, new_pos );
 }
@@ -149,7 +149,7 @@ audioStreamer_JACK::audioStreamer_JACK(const char* clientName,
 
     jack_set_process_callback (client, (JackProcessCallback) process_cb, this);
 
-    jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
+    //jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
 
     _out = new jack_port_t*[nOutputChannels];
     _outports = new float*[nOutputChannels];
@@ -255,12 +255,21 @@ audioStreamer_JACK::process( jack_nframes_t nframes ) {
     _outports[i] = (float *) jack_port_get_buffer(_out[i], nframes);
   }
 
+  jack_position_t pos;
+  bool isPlaying = jack_transport_query (client, &pos) == JackTransportRolling;
+  bool isSeek = false;
+  double cursessionpos = (double)pos.frame/(double)pos.frame_rate;
+
   splproc(_inports,
 	  m_innch,
 	  _outports,
 	  m_outnch,
 	  nframes,
-	  jack_get_sample_rate(client));
+	  jack_get_sample_rate(client),
+	  true,
+	  isPlaying,
+	  isSeek,
+	  cursessionpos);
   _process_lock.Leave();
   return 0;
 }

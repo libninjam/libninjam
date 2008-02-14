@@ -34,7 +34,7 @@
 
 
 #include <ninjam/netmsg.h>
-#include <WDL/string.h>
+#include <WDL/wdlstring.h>
 #include <WDL/sha.h>
 #include <WDL/ptrlist.h>
 #include <ninjam/mpb.h>
