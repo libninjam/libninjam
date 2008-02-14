@@ -1,4 +1,4 @@
-ninjam (0.06-1~sessionmode) gutsy; urgency=low
+ninjam (0.06-1ubuntu7~sessionmode) gutsy; urgency=low
 
   * update to official ninjam client core with session and voice chat mode
     support
@@ -6,7 +6,27 @@ ninjam (0.06-1~sessionmode) gutsy; urgency=low
     mode
   * update WDL to upstream 20071218
 
- -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 04 Feb 2008 23:53:08 +0100
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 14 Feb 2008 03:02:08 +0100
+
+ninjam (0.06-1ubuntu7) gutsy; urgency=low
+
+  * make create_audioStreamer_JACK return NULL, if the jack connection 
+    cannot be successfully established.
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 11 Feb 2008 14:41:12 +0100
+
+ninjam (0.06-1ubuntu6) gutsy; urgency=low
+
+  * reopen server log file on SIGHUP so that logrotate can work properly
+  * updated logrotate file to reload server after log rotation
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Fri, 08 Feb 2008 04:24:37 +0100
+
+ninjam (0.06-1ubuntu5) gutsy; urgency=low
+
+  * fixed output of month in server log file
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Fri, 08 Feb 2008 03:49:33 +0100
 
 ninjam (0.06-1ubuntu4) gutsy; urgency=low
 
