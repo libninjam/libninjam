@@ -42,7 +42,7 @@ class NJClient;
 class audioStreamer
 {
  public:
-  audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; }
+  audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; m_sessionmode=false; }
   virtual ~audioStreamer() { }
   
   virtual const char *GetChannelName(int idx)=0;
@@ -60,6 +60,7 @@ class audioStreamer
   }
 
   int m_srate, m_innch, m_outnch, m_bps;
+  bool m_sessionmode;
 };
 
 
