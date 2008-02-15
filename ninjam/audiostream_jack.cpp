@@ -108,7 +108,6 @@ private:
   SPLPROC splproc;
   NJClient *njc;
   WDL_Mutex _process_lock;
-  jack_transport_state_t _old_transport_state;
 
 public:
   void set_njclient( NJClient *njclient ) { njc = njclient; }
@@ -141,8 +140,7 @@ audioStreamer_JACK::audioStreamer_JACK()
     _inports(NULL),
     _outports(NULL),
     splproc(NULL),
-    njc(NULL),
-    _old_transport_state(JackTransportStopped)
+    njc(NULL)
 {
 }
 
@@ -283,6 +281,9 @@ bool audioStreamer_JACK::addOutputChannel()
 
 int
 audioStreamer_JACK::process( jack_nframes_t nframes ) {
+  static jack_transport_state_t last_transport_state = JackTransportStopped;
+  static jack_nframes_t last_frame = 0;
+
   _process_lock.Enter();
   for (unsigned i=0; i<m_innch; i++) {
     _inports[i] = (float *) jack_port_get_buffer(_in[i], nframes);
@@ -297,11 +298,13 @@ audioStreamer_JACK::process( jack_nframes_t nframes ) {
   bool isSeek = false;
   if (transport_state == JackTransportRolling) {
     isPlaying = true;
-    if (_old_transport_state != transport_state)
+    if ((last_transport_state != transport_state)||
+	(last_frame >= pos.frame))
       isSeek = true;
   }
   double cursessionpos = (double)pos.frame/(double)pos.frame_rate;
-  _old_transport_state = transport_state;
+  last_transport_state = transport_state;
+  last_frame = pos.frame;
 
   splproc(_inports,
 	  m_innch,
