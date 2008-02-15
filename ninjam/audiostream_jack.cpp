@@ -337,7 +337,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     }
 #endif
 
-    if( !njc ) return;
+    if(!njc || m_sessionmode) return;
 
     int posi, len;
     njc->GetPosition(&posi,&len);
