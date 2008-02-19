@@ -75,6 +75,9 @@
 
 #include <WDL/wavwrite.h>
 
+#include <set>
+#include <string>
+
 #include "netmsg.h"
 
 
@@ -112,6 +115,7 @@ public:
 
   // basic configuration
   int   config_autosubscribe;
+  std::set<std::string> config_autosubscribe_userlist;
   int   config_savelocalaudio; // set 1 to save compressed files, set to 2 to save .wav files as well. 
                                 // -1 makes it try to delete the remote .oggs as soon as possible
 

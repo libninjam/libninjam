@@ -1032,8 +1032,11 @@ int NJClient::Run() // nonzero if sleep ok
                     theuser->channels[cid].name.Set(chn);
                     theuser->chanpresentmask |= 1<<cid;
 
-
-                    if (config_autosubscribe)
+                    if ((config_autosubscribe == 1) ||
+			((config_autosubscribe == 2)&&
+			 (config_autosubscribe_userlist.find(un) != config_autosubscribe_userlist.end())) ||
+			((config_autosubscribe == 3)&&
+			 (config_autosubscribe_userlist.find(un) == config_autosubscribe_userlist.end())))
                     {
                       theuser->submask |= 1<<cid;
                       mpb_client_set_usermask su;
