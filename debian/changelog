@@ -1,4 +1,4 @@
-ninjam (0.06-1ubuntu7~sessionmode) gutsy; urgency=low
+ninjam (0.06-1ubuntu8~sessionmode) gutsy; urgency=low
 
   * update to official ninjam client core with session and voice chat mode
     support
@@ -7,6 +7,12 @@ ninjam (0.06-1ubuntu7~sessionmode) gutsy; urgency=low
   * update WDL to upstream 20071218
 
  -- Tobias Gehrig <tobias@gehrignet.de>  Mon, 14 Feb 2008 03:02:08 +0100
+
+ninjam (0.06-1ubuntu8) gutsy; urgency=low
+
+  * add per-user autosubscripe option
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 16 Feb 2008 16:17:04 +0100
 
 ninjam (0.06-1ubuntu7) gutsy; urgency=low
 
