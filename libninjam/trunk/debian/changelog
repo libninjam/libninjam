@@ -1,3 +1,9 @@
+ninjam (0.06-1ubuntu8) gutsy; urgency=low
+
+  * add per-user autosubscripe option
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 16 Feb 2008 16:17:04 +0100
+
 ninjam (0.06-1ubuntu7) gutsy; urgency=low
 
   * make create_audioStreamer_JACK return NULL, if the jack connection 
