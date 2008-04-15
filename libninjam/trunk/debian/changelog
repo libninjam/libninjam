@@ -1,6 +1,13 @@
+ninjam (0.06-1ubuntu9) hardy; urgency=low
+
+  * add conditional to Makefile to predict correct compile flags for 
+    64bit CPUs
+
+ -- Tobias Gehrig <tobias@gehrignet.de>  Tue, 15 Apr 2008 16:17:33 +0200
+
 ninjam (0.06-1ubuntu8) gutsy; urgency=low
 
-  * add per-user autosubscripe option
+  * add per-user autosubscribe option
 
  -- Tobias Gehrig <tobias@gehrignet.de>  Sat, 16 Feb 2008 16:17:04 +0100
 
