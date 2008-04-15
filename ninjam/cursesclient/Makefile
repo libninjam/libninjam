@@ -13,7 +13,12 @@ ifdef MAC
 OPTFLAGS += -D_MAC -mcpu=7450
 LFLAGS += -framework coreaudio -lncurses.5
 else
-OPTFLAGS += -malign-double 
+MACH=$(shell uname -m)
+ifeq ($(MACH), x86_64)
+OPTFLAGS += -fPIC
+else
+OPTFLAGS += -malign-double
+endif
 LFLAGS += -lncurses
 endif
 
