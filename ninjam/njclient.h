@@ -19,8 +19,8 @@
 
 /*
 
-  This file defines the interface for the NJClient class, which handles 
-  the bulk of logic and state of the client. 
+  This file defines the interface for the NJClient class, which handles
+  the bulk of logic and state of the client.
 
   The basic premise of the NJClient class is, the UI code tells NJClient
   when the user tweaks something, and NJClient tells the UI code when
@@ -29,18 +29,18 @@
   NJClient::Run() needs to be called regularly (preferably every 50ms or less).
   When calling, if Run() returns 0, you should immediately call it again. i.e.:
 
-  while (!myClient->Run()); 
+  while (!myClient->Run());
 
-  Is how Run() should usually be called. In general it is easier to call Run() 
+  Is how Run() should usually be called. In general it is easier to call Run()
   from the UI thread in a timer, for example, but it turns out it's a lot better
   to call it from its own thread to ensure that some UI issue doesn't end up
   stalling it. If you go this route, you will want to put the Run() call inside
-  of a mutex lock, and also any code that reads/writes remote channel state or 
-  writes to local channel state, in that mutex lock as well. This is a bit of 
+  of a mutex lock, and also any code that reads/writes remote channel state or
+  writes to local channel state, in that mutex lock as well. This is a bit of
   a pain, but not really that bad.
 
   Additionally, NJClient::AudioProc() needs to be called from the audio thread.
-  It is not necessary to do any sort of mutex protection around these calls, 
+  It is not necessary to do any sort of mutex protection around these calls,
   though, as they are done internally.
 
 
@@ -66,13 +66,14 @@
 #endif
 #include <stdio.h>
 #include <time.h>
+
+
 #include <WDL/string.h>
 #include <WDL/ptrlist.h>
 #include <WDL/jnetlib/jnetlib.h>
 #include <WDL/sha.h>
 #include <WDL/rng.h>
 #include <WDL/mutex.h>
-
 #include <WDL/wavwrite.h>
 
 #include <set>
@@ -112,25 +113,22 @@ public:
 
 
   // basic configuration
-  int   config_autosubscribe;
+  int  config_autosubscribe;
   std::set<std::string> config_autosubscribe_userlist;
-  int   config_savelocalaudio; // set 1 to save compressed files, set to 2 to save .wav files as well. 
+  int  config_savelocalaudio; // set 1 to save compressed files, set to 2 to save .wav files as well.
                                 // -1 makes it try to delete the remote .oggs as soon as possible
-
   float config_metronome,config_metronome_pan; // volume of metronome
   bool  config_metronome_mute;
   int	config_metronome_channel;
-  bool config_metronome_stereoout;
+  bool  config_metronome_stereoout;
   float config_mastervolume,config_masterpan; // master volume
   bool  config_mastermute;
-  int   config_debug_level; 
+  int   config_debug_level;
   int   config_play_prebuffer; // -1 means play instantly, 0 means play when full file is there, otherwise refers to how many
                                // bytes of compressed source to have before play. the default value is 4096.
 
   float GetOutputPeak();
-
-  enum { NJC_STATUS_DISCONNECTED=-3,NJC_STATUS_INVALIDAUTH=-2, NJC_STATUS_CANTCONNECT=-1, NJC_STATUS_OK=0, NJC_STATUS_PRECONNECT};
-  int GetStatus();
+  int   GetStatus();
 
   void SetWorkDir(const char *path);
   char *GetWorkDir() { return m_workdir.Get(); }
@@ -141,7 +139,7 @@ public:
   float GetActualBPM() { return (float) m_active_bpm; }
   int GetBPI() { return m_active_bpi; }
   void GetPosition(int *pos, int *length);  // positions in samples
-  int GetLoopCount() { return m_loopcnt; }  
+  int GetLoopCount() { return m_loopcnt; }
   unsigned int GetSessionPosition(); // returns milliseconds
 
   int HasUserInfoChanged() { if (m_userinfochange) { m_userinfochange=0; return 1; } return 0; }
@@ -205,7 +203,7 @@ public:
   // usernames are not case sensitive, but message names ARE.
 
   // note that nparms is the MAX number of parms, you still can get NULL parms entries in there (though rarely)
-  void (*ChatMessage_Callback)(int user32, NJClient *inst, const char **parms, int nparms); 
+  void (*ChatMessage_Callback)(int user32, NJClient *inst, const char **parms, int nparms);
   int ChatMessage_User32;
 
 
@@ -213,6 +211,40 @@ public:
   // return 0 if you want the default behavior
   int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
   int ChannelMixer_User32;
+
+
+  /* client helpers */
+
+  // NOTE: these are provided as a convenience to clients but are unused by libninjam
+  // TODO: most of the LinJam "NJClient config helpers" could be here
+  char *GetLocalChannelName(int channel_idx)
+  { return GetLocalChannelInfo(channel_idx , NULL , NULL , NULL) ; }
+
+
+  /* constants and enums */
+
+  // NOTE: these are provided as a convenience to clients but most are unused by libninjam
+  // TODO: have libninjam actually refer to these instead of magic numbers
+  // TODO: ideally SaveSession enum would describe as a bitfield just as SaveMixdown
+  //           like: TEMP = 256 , NONE = 0 , OGG = 1 , WAV = 2 , OGG_AND_WAV = 3
+  //           but for SAVE_TEMP (delete ASAP) is currently hard coded NJClient
+  //           and save wav only is not implemented
+
+  enum ConnectionStatus { NJC_STATUS_DISCONNECTED = -3 , NJC_STATUS_INVALIDAUTH = -2 ,
+                          NJC_STATUS_CANTCONNECT  = -1 , NJC_STATUS_OK          =  0 ,
+                          NJC_STATUS_PRECONNECT                                      } ;
+
+  enum SubscribeMode    { SUBSCRIBE_NONE  , SUBSCRIBE_ALL  ,
+                          SUBSCRIBE_ALLOW , SUBSCRIBE_DENY } ;
+
+  enum SaveMultitrack   { SAVE_TEMP = -1 , SAVE_NONE    = 0 ,
+                          SAVE_OGG       , SAVE_OGG_AND_WAV } ;
+
+  enum SaveMixdown      { MIXDOWN_NONE , MIXDOWN_OGG         ,
+                          MIXDOWN_WAV  , MIXDOWN_OGG_AND_WAV } ;
+
+  enum DebugLevel       { DEBUG_SILENT  , DEBUG_AUDIO ,
+                          DEBUG_NETWORK , DEBUG_TRACE } ;
 
 
 protected:
