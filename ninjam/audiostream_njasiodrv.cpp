@@ -28,7 +28,7 @@ std::string audioStreamer::ASIODriverName ; // NewASIO()
 
 /* audioStreamer public constructors */
 
-audioStreamer* audioStreamer::NewASIO(SPLPROC on_samples_proc     , int asio_driver_n      ,
+audioStreamer* audioStreamer::NewASIO(SPLPROC on_samples_cb       , int asio_driver_n      ,
                                       int     input_channel_b_n   , int input_channel_e_n  ,
                                       int     output_channel_b_n  , int output_channel_e_n ,
                                       bool    should_show_asio_cp                          )
@@ -50,7 +50,7 @@ audioStreamer* audioStreamer::NewASIO(SPLPROC on_samples_proc     , int asio_dri
                             output_channel_b_n , output_channel_e_n                 )))
     return NULL ;
 
-  audioStreamer* audio = CreateASIO(&cli_args , on_samples_proc) ;
+  audioStreamer* audio = CreateASIO(&cli_args , on_samples_cb) ;
 
   if (!!audio) ASIODriverName = cli_args ;
 
@@ -67,7 +67,7 @@ std::string audioStreamer::GetASIODriverName() { return ASIODriverName ; }
 
 /* audioStreamer private class methods */
 
-audioStreamer* (*audioStreamer::CreateASIO)(char** cli_args , SPLPROC on_samples_proc) ;
+audioStreamer* (*audioStreamer::CreateASIO)(char** cli_args , SPLPROC on_samples_cb) ;
 
 bool audioStreamer::LoadNjasiodrvDll()
 {

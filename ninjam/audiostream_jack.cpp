@@ -17,27 +17,13 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-/*
+/*\
+|*| This file implements the AudioStreamer subclass for JACK.
+|*|   * audioStreamer_JACK // audioStreamer subclass
+|*| Instantiation is exposed only through class methods of the AudioStreamer superclass.
+|*|   * audioStreamer::NewJACK()
+\*/
 
-  This file implements a audioStreamer that uses ALSA.
-  It only exposes the following functions:
-
-    audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
-  
-    cfg is a string that has a list of parameter/value pairs (space delimited) 
-    for the config:
-      in     - input device i.e. hw:0,0
-      out    - output device i.e. hw:0,0
-      srate  - sample rate i.e. 48000
-      bps    - bits/sample i.e. 16
-      nch    - channels i.e. 2
-      bsize  - block size (bytes) i.e. 2048
-      nblock - number of blocks i.e. 16
-
-
-  (everything else in this file is used internally)
-
-*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +45,12 @@
 
 #include "audiostream.h"
 
+
+/* audioStreamer public class constants */
+
+const std::string audioStreamer::DEFAULT_JACK_NAME = "aNinjam" ;
+
+
 static void audiostream_onunder() { }
 static void audiostream_onover() { }
 
@@ -78,12 +70,12 @@ public:
 	    SPLPROC proc);
   int process( jack_nframes_t nframes );
   void timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos );
-  
-  
+
+
   const char *GetChannelName(int idx) {
     return GetInputChannelName(idx);
   }
-  
+
   const char *GetInputChannelName(int idx)
   {
     if ((idx >= 0)&&(idx < m_innch)) {
@@ -91,7 +83,7 @@ public:
     } else
       return NULL;
   }
-  
+
   const char *GetOutputChannelName(int idx)
   {
     if ((idx >= 0)&&(idx < m_outnch)) {
@@ -144,7 +136,7 @@ audioStreamer_JACK::audioStreamer_JACK()
 {
 }
 
-audioStreamer_JACK::~audioStreamer_JACK() 
+audioStreamer_JACK::~audioStreamer_JACK()
 {
   // jack_deactivate(client);
     jack_client_close(client);
@@ -168,16 +160,19 @@ bool audioStreamer_JACK::init(const char* clientName,
       jack_client_close(client);
       client = NULL;
     }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     if ((client = jack_client_new(clientName)) == 0) {
       fprintf (stderr, "jack server not running?\n");
       return false;
       // exit(20);
     }
-    
+#pragma GCC diagnostic pop
+
     jack_set_process_callback (client, (JackProcessCallback) process_cb, this);
 
     jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
-    
+
     if (_out) {
       delete[] _out;
       _out = NULL;
@@ -329,7 +324,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     //len = (int)(njc->GetBPI() * m_srate * 60 / bpm);
 
     // sync jack_transport_frame to njframe
-    
+
     //current_frame = jack_get_current_transport_frame( client );
     jack_transport_query(client, &cur_pos);
     current_frame = cur_pos.frame;
@@ -341,7 +336,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     if( diff > nframes ) {
 #if 1
 	jack_transport_locate( client, (current_frame / len) * len + (posi%len) + 2*nframes );
-	
+
 	//printf( "no:  current= %d diff = %d\n", (current_frame % len) -  (posi % len), diff );
 #endif
     }
@@ -352,14 +347,14 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 
 
     //printf( "jack_timebase_callback() [%d] [%d] [%d]", state, new_pos, current_frame);
-    
+
     pos->valid = JackPositionBBT;
     pos->beats_per_bar = 4;
     pos->beat_type = 4;
-    pos->ticks_per_beat = c_ppqn * 10;    
+    pos->ticks_per_beat = c_ppqn * 10;
     pos->beats_per_minute = bpm;
-    
-    
+
+
     /* Compute BBT info from frame number.  This is relatively
      * simple here, but would become complex if we supported tempo
      * or time signature changes at specific locations in the
@@ -370,7 +365,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
           state_current ==  JackTransportRolling ){
 
         //printf ( "Starting [%d] [%d]\n", last_frame, current_frame );
-        
+
         jack_tick = 0.0;
         last_frame = current_frame;
     }
@@ -381,21 +376,21 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
             (current_frame - last_frame) *
             pos->ticks_per_beat *
             pos->beats_per_minute / (pos->frame_rate * 60.0);
-        
+
         jack_tick += jack_delta_tick;
 
         last_frame = current_frame;
     }
-    
+
     long ptick = 0, pbeat = 0, pbar = 0;
-    
+
     pbar  = (long) ((long) jack_tick / (pos->ticks_per_beat *  pos->beats_per_bar ));
-    
+
     pbeat = (long) ((long) jack_tick % (long) (pos->ticks_per_beat *  pos->beats_per_bar ));
     pbeat = pbeat / (long) pos->ticks_per_beat;
-    
+
     ptick = (long) jack_tick % (long) pos->ticks_per_beat;
-    
+
     pos->bar = pbar + 1;
     pos->beat = pbeat + 1;
     pos->tick = ptick;;
@@ -407,6 +402,28 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     state_last = state_current;
 
 }
+
+
+/* audioStreamer public constructors */
+
+audioStreamer* audioStreamer::NewJACK(SPLPROC     on_samples_cb    , NJClient* a_NJClient ,
+                                      std::string jack_client_name ,
+                                      int         n_input_channels , int       n_output_channels)
+{
+  audioStreamer_JACK* jack_streamer = new audioStreamer_JACK() ;
+  if (!jack_streamer->init(jack_client_name.c_str() , n_input_channels ,
+                           n_output_channels        , on_samples_cb    ))
+  {
+    delete jack_streamer ; return NULL ;
+  }
+
+  jack_streamer->set_njclient(a_NJClient) ;
+
+  return jack_streamer ;
+}
+
+
+/* legacy v0.06 (gNinjam) */
 
 audioStreamer *create_audioStreamer_JACK(const char* clientName,
 					 int nInputChannels,

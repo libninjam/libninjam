@@ -505,6 +505,10 @@ audioStreamer* audioStreamer::NewKS(SPLPROC on_samples_proc                   ,
                                     int     sample_rate     , int  bit_depth  ,
                                     int*    n_buffers       , int* buffer_size)
 {
+// TODO: the KS "constructor" requires writable memory for n_buffers and buffer_size
+//         but we are ignoring the results for now
+//       these should be an instance vars with public accessors
+
   audioStreamer_KS* input_streamer  = new audioStreamer_KS() ;
   audioStreamer_KS* output_streamer = new audioStreamer_KS() ;
 

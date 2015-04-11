@@ -17,18 +17,18 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-/*
+/*\
+|*| This file implements the AudioStreamer subclasses for DirectSound and WaveOut.
+|*|   * audioStreamer_int           // internal          root class
+|*|   * audioStreamer_ds            // audioStreamer_int subclass
+|*|   * audioStreame _waveOut       // audioStreamer_int subclass
+|*|   * audioStreamer_win32_asiosim // audioStreamer     subclass
+|*| It also implements some relevant utility methods of the AudioStreamer superclass.
+|*| Instantiation is exposed only through class methods of the AudioStreamer superclass.
+|*|   * audioStreamer::NewDS()
+|*|   * audioStreamer::NewWAVE()
+\*/
 
-  This file implements a audioStreamers that use DirectSound and WaveOut.
-  It only exposes the following functions:
-
-    audioStreamer *create_audioStreamer_WO(int srate, int bps, int devs[2], int *nbufs, int *bufsize, SPLPROC proc);
-    audioStreamer *create_audioStreamer_DS(int srate, int bps, GUID devs[2], int *nbufs, int *bufsize, SPLPROC proc);
-  
-
-  (everything else in this file is used internally)
-
-*/
 
 #include <windows.h>
 #include <mmsystem.h>
@@ -45,7 +45,7 @@
 /* audioStreamer public class constants */
 
 #ifndef NO_SUPPORT_DS
-const char* audioStreamer::DEFAULT_DS_DEVICE_NAME = "Primary Sound Driver" ;
+const std::string audioStreamer::DEFAULT_DS_DEVICE_NAME = "Primary Sound Driver" ;
 #endif // NO_SUPPORT_DS
 
 
@@ -91,7 +91,7 @@ std::vector<GUID> audioStreamer::GetDsGuids()
   std::vector<GUID> device_guids ;
 
   for (unsigned int device_n = 0 ; device_n < DsDevices.size() ; ++device_n)
-    device_guids.push_back(DsDevices[device_n].guid) ;
+    device_guids.push_back(DsDevices[device_n].deviceGuid) ;
 
   return device_guids ;
 }
@@ -103,7 +103,7 @@ std::string audioStreamer::GetDsGuidsCSV(std::string separator)
   std::string device_guids ;
 
   for (unsigned int device_n = 0 ; device_n < DsDevices.size() ; ++device_n)
-    device_guids += DsGuidToString(&DsDevices[device_n].guid) + separator ;
+    device_guids += DsGuidToString(&DsDevices[device_n].deviceGuid) + separator ;
 
   if (!!DsDevices.size()) device_guids.resize(device_guids.length() - separator.length()) ;
 
@@ -118,7 +118,7 @@ void audioStreamer::GetDsGuidByName(std::string device_name , LPGUID guid)
 
   for (unsigned int device_n = 0 ; device_n < DsDevices.size() ; ++device_n)
     if (!DsDevices[device_n].deviceName.compare(device_name))
-      *guid = DsDevices[device_n].guid ;
+      *guid = DsDevices[device_n].deviceGuid ;
 }
 
 int audioStreamer::GetDsGuidIdx(LPGUID guid)
@@ -127,7 +127,7 @@ int audioStreamer::GetDsGuidIdx(LPGUID guid)
 
   int device_n = (int)DsDevices.size() ;
 
-  while (device_n-- && memcmp(&DsDevices[device_n].guid , guid , sizeof(GUID))) ;
+  while (device_n-- && memcmp(&DsDevices[device_n].deviceGuid , guid , sizeof(GUID))) ;
 
   return device_n ;
 }
@@ -153,7 +153,7 @@ std::string audioStreamer::DsGuidToString(LPGUID guid)
   RpcStringFree(&uuid_bytes) ;
 */
   LPOLESTR uuid_cstring ;
-  StringFromCLSID((CLSID)*guid , &uuid_cstring) ;  
+  StringFromCLSID((CLSID)*guid , &uuid_cstring) ;
   std::string uuid_string = (char*)uuid_cstring ;
 
   return uuid_string ;
@@ -269,7 +269,7 @@ class audioStreamer_win32_asiosim : public audioStreamer
       return 0;
     }
     audioStreamer_int *in, *out;
-    
+
     HANDLE hThread;
     int m_done,m_bufsize;
     char *m_buf;
@@ -299,7 +299,7 @@ void audioStreamer_win32_asiosim::tp()
 
       floatsToPcm(outptrs[0],1,spllen,m_buf,m_bps,2);
       floatsToPcm(outptrs[1],1,spllen,m_buf+(m_bps/8),m_bps,2);
-  
+
       out->Write(m_buf,a);
     }
     else
@@ -323,7 +323,7 @@ class audioStreamer_ds : public audioStreamer_int
 		int Write(char *buf, int len); // returns 0 on success
 
 	private:
-	
+
     int m_bps,m_nch,m_srate;
 
     LPDIRECTSOUND m_lpds;
@@ -404,7 +404,7 @@ int audioStreamer_ds::Open(int iswrite, int srate, int nch, int bps, int sleep, 
         // create a secondary buffer for now
         DSBUFFERDESC ds={sizeof(ds),DSBCAPS_GETCURRENTPOSITION2|DSBCAPS_GLOBALFOCUS,m_totalbufsize,0,&wfx, };
         m_lpds->CreateSoundBuffer(&ds,&m_outbuf,NULL);
-        
+
       }
 
   }
@@ -443,7 +443,7 @@ int audioStreamer_ds::Read(char *buf, int len) // returns 0 if blocked, < 0 if e
     m_i_lw=m_i_dw;
     m_bufpos=0;
     while (m_bufpos < cappos-m_bufsize) m_bufpos += m_bufsize;
-    if (m_bufpos >= m_totalbufsize) 
+    if (m_bufpos >= m_totalbufsize)
     {
       m_i_lw++;
       m_bufpos -= m_totalbufsize;
@@ -466,7 +466,7 @@ int audioStreamer_ds::Read(char *buf, int len) // returns 0 if blocked, < 0 if e
 
   void *v1=0, *v2=0;
   DWORD lv1=0, lv2=0;
-  
+
   if (m_inbuf->Lock(m_bufpos,len,&v1,&lv1,&v2,&lv2,FALSE) == DS_OK)
   {
     int l1=min((int)lv1,len);
@@ -475,13 +475,13 @@ int audioStreamer_ds::Read(char *buf, int len) // returns 0 if blocked, < 0 if e
     m_inbuf->Unlock(v1,lv1,v2,lv2);
 
     m_bufpos += len;
-    if (m_bufpos >= m_totalbufsize) 
+    if (m_bufpos >= m_totalbufsize)
     {
       m_i_lw++;
       m_bufpos -= m_totalbufsize;
     }
   }
-  else 
+  else
   {
     return -1;
   }
@@ -490,7 +490,7 @@ int audioStreamer_ds::Read(char *buf, int len) // returns 0 if blocked, < 0 if e
 }
 
 int audioStreamer_ds::Write(char *buf, int len) // returns 0 on success
-{ 
+{
   if (len<1) return 0;
   if (!m_outbuf) return -1;
 
@@ -506,7 +506,7 @@ int audioStreamer_ds::Write(char *buf, int len) // returns 0 on success
 
 //  thispos=ppos; // let's use the write cursor, not the play position
 
-  if (thispos < m_last_pos) 
+  if (thispos < m_last_pos)
   {
     m_i_dw++;
   }
@@ -544,13 +544,13 @@ int audioStreamer_ds::Write(char *buf, int len) // returns 0 on success
       m_outbuf->Unlock(v1,lv1,v2,lv2);
 
       m_bufpos += len;
-      if (m_bufpos >= m_totalbufsize) 
+      if (m_bufpos >= m_totalbufsize)
       {
         m_bufpos -= m_totalbufsize;
         m_i_lw++;
       }
     }
-    else 
+    else
     {
       return -1;
     }
@@ -580,15 +580,15 @@ class audioStreamer_waveOut : public audioStreamer_int
 		int Write(char *buf, int len); // returns 0 on success
 
 	private:
-	
+
 		int m_sleep;
 		int m_bufsize;
 
-		HWAVEOUT m_hwo; 
+		HWAVEOUT m_hwo;
 		HWAVEIN m_hwi;
-    
+
 		WDL_PtrList<WDL_HeapBuf> m_bufs; // includes WAVEHDR and buffer each
-   
+
 		int m_whichbuf; // used only for read mode
 };
 
@@ -655,11 +655,11 @@ int audioStreamer_waveOut::Open(int iswrite, int srate, int nch, int bps, int sl
 
   if (iswrite)
   {
-	  if(waveOutOpen(&m_hwo,device,&wfx,(DWORD)0,0,WAVE_FORMAT_DIRECT)!=MMSYSERR_NOERROR) return -1; 
+	  if(waveOutOpen(&m_hwo,device,&wfx,(DWORD)0,0,WAVE_FORMAT_DIRECT)!=MMSYSERR_NOERROR) return -1;
   }
   else
   {
-  	if(waveInOpen(&m_hwi,device,&wfx,0,0,WAVE_FORMAT_DIRECT)!=MMSYSERR_NOERROR) return -1; 
+  	if(waveInOpen(&m_hwi,device,&wfx,0,0,WAVE_FORMAT_DIRECT)!=MMSYSERR_NOERROR) return -1;
   }
 
 
@@ -682,7 +682,7 @@ int audioStreamer_waveOut::Open(int iswrite, int srate, int nch, int bps, int sl
 		  waveInPrepareHeader(m_hwi,h,sizeof(WAVEHDR));
 		  waveInAddBuffer(m_hwi,h,sizeof(WAVEHDR));
 	  }
-	  else 
+	  else
 	  {
       waveOutPrepareHeader(m_hwo,h,sizeof(WAVEHDR));
 	  }
@@ -718,7 +718,7 @@ int audioStreamer_waveOut::Read(char *buf, int len) // returns 0 if blocked, < 0
         if (x != m_whichbuf)
         {
           WAVEHDR *th = (WAVEHDR *) m_bufs.Get(x)->Get();
-          if (th->dwFlags & WHDR_DONE) 
+          if (th->dwFlags & WHDR_DONE)
           {
             th->dwBytesRecorded=0;
             th->dwFlags = WHDR_PREPARED;
@@ -731,9 +731,9 @@ int audioStreamer_waveOut::Read(char *buf, int len) // returns 0 if blocked, < 0
 #endif
 
   WAVEHDR *th = (WAVEHDR *) m_bufs.Get(m_whichbuf)->Get();
-  while (!(th->dwFlags & WHDR_DONE)) 
+  while (!(th->dwFlags & WHDR_DONE))
   {
-    Sleep(WO_SLEEP); 
+    Sleep(WO_SLEEP);
   }
   len=min(len,(int)th->dwBytesRecorded);
 
@@ -749,7 +749,7 @@ int audioStreamer_waveOut::Read(char *buf, int len) // returns 0 if blocked, < 0
 }
 
 int audioStreamer_waveOut::Write(char *buf, int len) // returns 0 on success
-{ 
+{
   if (!m_hwo) return -1;
   if (len<1) return 0;
 
@@ -765,7 +765,7 @@ int audioStreamer_waveOut::Write(char *buf, int len) // returns 0 on success
         WAVEHDR *h=(WAVEHDR *)m_bufs.Get(x)->Get();
         if (h->dwFlags & WHDR_DONE) h->dwFlags &= ~(WHDR_INQUEUE|WHDR_DONE); // remove done and in queue
 
-        if (!(h->dwFlags & WHDR_INQUEUE)) 
+        if (!(h->dwFlags & WHDR_INQUEUE))
         {
           cnt++;
           use_addr=x;
@@ -789,7 +789,7 @@ int audioStreamer_waveOut::Write(char *buf, int len) // returns 0 on success
 
   h->dwBufferLength=len;
   memcpy(h->lpData,buf,len);
-  waveOutWrite(m_hwo,h,sizeof(WAVEHDR)); 
+  waveOutWrite(m_hwo,h,sizeof(WAVEHDR));
 
   if (!cnt)
   {
@@ -801,8 +801,8 @@ int audioStreamer_waveOut::Write(char *buf, int len) // returns 0 on success
       if (x != use_addr)
       {
         h=(WAVEHDR *) m_bufs.Get(x)->Get();
-        h->dwBufferLength=len;      
-        waveOutWrite(m_hwo,h,sizeof(WAVEHDR)); 
+        h->dwBufferLength=len;
+        waveOutWrite(m_hwo,h,sizeof(WAVEHDR));
       }
     }
   }
@@ -837,24 +837,24 @@ audioStreamer* audioStreamer::NewDS(SPLPROC on_samples_proc                     
 }
 #endif // NO_SUPPORT_DS
 #ifndef NO_SUPPORT_WAVE
-audioStreamer* audioStreamer::NewWAVE(SPLPROC on_samples_proc                       ,
+audioStreamer* audioStreamer::NewWAVE(SPLPROC on_samples_cb                         ,
                                       int     input_device_n  , int output_device_n ,
                                       int     sample_rate     , int bit_depth       ,
                                       int     n_buffers       , int buffer_size     )
 {
-audioStreamer_waveOut* input_streamer  = new audioStreamer_waveOut() ;
-audioStreamer_waveOut* output_streamer = new audioStreamer_waveOut() ;
+  audioStreamer_waveOut* input_streamer  = new audioStreamer_waveOut() ;
+  audioStreamer_waveOut* output_streamer = new audioStreamer_waveOut() ;
 
-if (input_streamer ->Open(0 , sample_rate , 2 , bit_depth , 0      ,
-              n_buffers , buffer_size , input_device_n ) ||
-output_streamer->Open(1 , sample_rate , 2 , bit_depth , 0      ,
-              n_buffers , buffer_size , output_device_n)  )
-{
-delete input_streamer ; delete output_streamer ; return 0 ;
-}
+  if (input_streamer ->Open(0 , sample_rate , 2 , bit_depth , 0      ,
+                            n_buffers , buffer_size , input_device_n ) ||
+      output_streamer->Open(1 , sample_rate , 2 , bit_depth , 0      ,
+                            n_buffers , buffer_size , output_device_n)  )
+  {
+    delete input_streamer ; delete output_streamer ; return 0 ;
+  }
 
-return new audioStreamer_win32_asiosim(input_streamer , output_streamer ,
-                           buffer_size    , sample_rate     ,
-                           bit_depth      , on_samples_proc ) ;
+  return new audioStreamer_win32_asiosim(input_streamer , output_streamer ,
+                                         buffer_size    , sample_rate     ,
+                                         bit_depth      , on_samples_cb   ) ;
 }
 #endif // NO_SUPPORT_WAVE

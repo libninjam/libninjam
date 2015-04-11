@@ -36,21 +36,5 @@ double VAL2DB(double x);
 void mkvolpanstr(char *str, double vol, double pan);
 void mkvolstr(char *str, double vol);
 void mkpanstr(char *str, double pan);
-/*
-#ifdef _WIN32
-#  include <WDL/string.h>
 
-#  ifdef JESUSONIC
-#    include <jesusonic/jesusonic_dll.h>
-
-extern WDL_String jesusdir;
-extern jesusonicAPI *JesusonicAPI;
-
-void *CreateJesusInstance(int a, char *chdesc, int srate);
-void JesusUpdateInfo(void *myInst, char *chdesc, int srate);
-void deleteJesusonicProc(void *i, int chi);
-void jesusonic_processor(float *buf, int len, void *inst);
-#  endif // JESUSONIC
-#endif // _WIN32
-*/
 #endif // _NJMISC_H_

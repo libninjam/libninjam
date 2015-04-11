@@ -13,7 +13,10 @@
 
 JNL_Connection::JNL_Connection(JNL_AsyncDNS *dns, int sendbufsize, int recvbufsize)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   m_errorstr="";
+#pragma GCC diagnostic pop
   if (dns == JNL_CONNECTION_AUTODNS)
   {
     m_dns=new JNL_AsyncDNS();
@@ -53,9 +56,12 @@ void JNL_Connection::connect(int s, struct sockaddr_in *loc)
     SET_SOCK_BLOCK(m_socket,0);
     m_state=STATE_CONNECTED;
   }
-  else 
+  else
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     m_errorstr="invalid socket passed to connect";
+#pragma GCC diagnostic pop
     m_state=STATE_ERROR;
   }
 }
@@ -67,7 +73,10 @@ void JNL_Connection::connect(char *hostname, int port)
   m_socket=::socket(AF_INET,SOCK_STREAM,0);
   if (m_socket==-1)
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     m_errorstr="creating socket";
+#pragma GCC diagnostic pop
     m_state=STATE_ERROR;
   }
   else
@@ -78,7 +87,10 @@ void JNL_Connection::connect(char *hostname, int port)
     memset(m_saddr,0,sizeof(m_saddr));
     if (!m_host[0])
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       m_errorstr="empty hostname";
+#pragma GCC diagnostic pop
       m_state=STATE_ERROR;
     }
     else
@@ -101,7 +113,7 @@ JNL_Connection::~JNL_Connection()
   }
   free(m_recv_buffer);
   free(m_send_buffer);
-  if (m_dns_owned) 
+  if (m_dns_owned)
   {
     delete m_dns;
   }
@@ -125,29 +137,35 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
         if (!a) { m_state=STATE_CONNECTING; }
         else if (a == 1)
         {
-          m_state=STATE_RESOLVING; 
+          m_state=STATE_RESOLVING;
           break;
         }
         else
         {
-          m_errorstr="resolving hostname"; 
-          m_state=STATE_ERROR; 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+          m_errorstr="resolving hostname";
+#pragma GCC diagnostic pop
+          m_state=STATE_ERROR;
           return;
         }
       }
-      if (!::connect(m_socket,(struct sockaddr *)m_saddr,16)) 
+      if (!::connect(m_socket,(struct sockaddr *)m_saddr,16))
       {
         m_state=STATE_CONNECTED;
       }
       else if (ERRNO!=EINPROGRESS)
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         m_errorstr="connecting to host";
+#pragma GCC diagnostic pop
         m_state=STATE_ERROR;
       }
       else { m_state=STATE_CONNECTING; }
     break;
     case STATE_CONNECTING:
-      {		
+      {
         fd_set f[3];
         FD_ZERO(&f[0]);
         FD_ZERO(&f[1]);
@@ -159,16 +177,22 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
         memset(&tv,0,sizeof(tv));
         if (select(m_socket+1,&f[0],&f[1],&f[2],&tv)==-1)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           m_errorstr="connecting to host (calling select())";
+#pragma GCC diagnostic pop
           m_state=STATE_ERROR;
         }
-        else if (FD_ISSET(m_socket,&f[1])) 
+        else if (FD_ISSET(m_socket,&f[1]))
         {
           m_state=STATE_CONNECTED;
         }
         else if (FD_ISSET(m_socket,&f[2]))
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           m_errorstr="connecting to host";
+#pragma GCC diagnostic pop
           m_state=STATE_ERROR;
         }
       }
@@ -184,7 +208,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
         {
           int res=::send(m_socket,m_send_buffer+m_send_pos,len,0);
           if (res==-1 && ERRNO != EWOULDBLOCK)
-          {            
+          {
 //            m_state=STATE_CLOSED;
 //            return;
           }
@@ -196,7 +220,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
             m_send_len-=res;
           }
         }
-        if (m_send_pos>=m_send_buffer_len) 
+        if (m_send_pos>=m_send_buffer_len)
         {
           m_send_pos=0;
           if (m_send_len>0)
@@ -228,7 +252,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
         {
           int res=::recv(m_socket,m_recv_buffer+m_recv_pos,len,0);
           if (res == 0 || (res < 0 && ERRNO != EWOULDBLOCK))
-          {        
+          {
             m_state=STATE_CLOSED;
             break;
           }
@@ -251,7 +275,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
             {
               int res=::recv(m_socket,m_recv_buffer+m_recv_pos,len,0);
               if (res == 0 || (res < 0 && ERRNO != EWOULDBLOCK))
-              {        
+              {
                 m_state=STATE_CLOSED;
                 break;
               }
@@ -317,15 +341,15 @@ int JNL_Connection::send(const void *_data, int length)
   {
     return -1;
   }
-  
+
   int write_pos=m_send_pos+m_send_len;
-  if (write_pos >= m_send_buffer_len) 
+  if (write_pos >= m_send_buffer_len)
   {
     write_pos-=m_send_buffer_len;
   }
 
   int len=m_send_buffer_len-write_pos;
-  if (len > length) 
+  if (len > length)
   {
     len=length;
   }
@@ -357,7 +381,7 @@ int JNL_Connection::peek_bytes(void *_data, int maxlength)
     maxlength=m_recv_len;
   }
   int read_pos=m_recv_pos-m_recv_len;
-  if (read_pos < 0) 
+  if (read_pos < 0)
   {
     read_pos += m_recv_buffer_len;
   }
@@ -380,7 +404,7 @@ int JNL_Connection::peek_bytes(void *_data, int maxlength)
 int JNL_Connection::recv_bytes(void *_data, int maxlength)
 {
   char *data = static_cast<char *>(_data);
-  
+
   int ml=peek_bytes(data,maxlength);
   m_recv_len-=ml;
   return ml;
@@ -390,7 +414,7 @@ int JNL_Connection::getbfromrecv(int pos, int remove)
 {
   int read_pos=m_recv_pos-m_recv_len + pos;
   if (pos < 0 || pos > m_recv_len) return -1;
-  if (read_pos < 0) 
+  if (read_pos < 0)
   {
     read_pos += m_recv_buffer_len;
   }
@@ -426,7 +450,7 @@ int JNL_Connection::recv_line(char *line, int maxlength)
   while (maxlength--)
   {
     int t=getbfromrecv(0,1);
-    if (t == -1) 
+    if (t == -1)
     {
       *line=0;
       return 0;

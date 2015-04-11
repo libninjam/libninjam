@@ -21,7 +21,7 @@
 
   Curses (text mode) client code. On Windows this requires the (included)
   win32 curses emulation layer.
-  
+
   */
 
 #ifdef _WIN32
@@ -136,7 +136,7 @@ void chatmsg_cb(int user32, NJClient *inst, const char **parms, int nparms)
 
       g_topic.Set(parms[2]);
       addChatLine("",tmp.Get());
-    
+
       g_need_disp_update=1;
     }
   }
@@ -145,7 +145,7 @@ void chatmsg_cb(int user32, NJClient *inst, const char **parms, int nparms)
     if (parms[1] && parms[2])
       addChatLine(parms[1],parms[2]);
     g_need_disp_update=1;
-  } 
+  }
   else if (!strcmp(parms[0],"PRIVMSG"))
   {
     if (parms[1] && parms[2])
@@ -158,7 +158,7 @@ void chatmsg_cb(int user32, NJClient *inst, const char **parms, int nparms)
       addChatLine(NULL,tmp.Get());
     }
     g_need_disp_update=1;
-  } 
+  }
   else if (!strcmp(parms[0],"JOIN") || !strcmp(parms[0],"PART"))
   {
     if (parms[1] && *parms[1])
@@ -170,7 +170,7 @@ void chatmsg_cb(int user32, NJClient *inst, const char **parms, int nparms)
       addChatLine("",tmp.Get());
     }
     g_need_disp_update=1;
-  } 
+  }
 }
 
 
@@ -186,9 +186,9 @@ void audiostream_onover() { }
 
 int g_audio_enable=0;
 
-void audiostream_onsamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate) 
-{ 
-  if (!g_audio_enable) 
+void audiostream_onsamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
+{
+  if (!g_audio_enable)
   {
     int x;
     // clear all output buffers
@@ -233,7 +233,7 @@ void highlightoutline(int line, char *str, int attrnorm, int bknorm, int attrhi,
       if (whl > 0)
       {
         char *tmp=strstr(str,"]");
-        if (tmp && !strstr(tmp,"[")) 
+        if (tmp && !strstr(tmp,"["))
         {
           whl=0;
           g_sel_x=lcol;
@@ -286,7 +286,7 @@ void drawstatusbar()
 	bkgdset(COLORMAP(0));
 	attrset(COLORMAP(0));
 
-  move(curs_ypos,curs_xpos); 
+  move(curs_ypos,curs_xpos);
 }
 
 void showmainview(bool action=false, int ymove=0)
@@ -325,7 +325,7 @@ void showmainview(bool action=false, int ymove=0)
     if (g_sel_ypos-- <= 0)
     {
       if (g_sel_ycat == 1) g_sel_ypos=sec1lines-1;
-      else if (g_sel_ycat == 2) g_sel_ypos=sec2lines-1; 
+      else if (g_sel_ycat == 2) g_sel_ypos=sec2lines-1;
       else g_sel_ypos=0;
 
       if (g_sel_ycat>0) g_sel_ycat--;
@@ -360,7 +360,7 @@ void showmainview(bool action=false, int ymove=0)
     {
       if (g_sel_x == 1 || g_sel_x == 3)
       {
-        g_ui_state=1;        
+        g_ui_state=1;
         g_ui_voltweakstate_channel=g_sel_x == 1 ? -2 : -1;
       }
       else
@@ -425,7 +425,7 @@ void showmainview(bool action=false, int ymove=0)
       else if (g_sel_x == 4)
       {
         //volume
-        g_ui_state=1;        
+        g_ui_state=1;
         g_ui_voltweakstate_channel=a;
       }
 #ifdef _WIN32
@@ -436,10 +436,10 @@ void showmainview(bool action=false, int ymove=0)
         if (!i)
         {
           // start it up
-          void *p=CreateJesusInstance(a,"",g_audio->m_srate);
+          void *p=CreateJesusInstance(a,"",g_audio->getSampleRate());
           if (p) g_client->SetLocalChannelProcessor(a,jesusonic_processor,p);
         }
-        else 
+        else
         {
           if (g_sel_x >= 7)  // kill
           {
@@ -487,7 +487,7 @@ void showmainview(bool action=false, int ymove=0)
 
 #ifdef _WIN32
     void *tmp;
-    g_client->GetLocalChannelProcessor(a,NULL,&tmp); 
+    g_client->GetLocalChannelProcessor(a,NULL,&tmp);
 #endif
     char volstr[256];
     mkvolpanstr(volstr,vol,pan);
@@ -502,7 +502,7 @@ void showmainview(bool action=false, int ymove=0)
       sname=snamebuf;
     }
     sprintf(linebuf,"  [%s] [%c]xmit [%s] [%c]mute [%s] [del] ",name,bc?'X':' ',sname,mute?'X':' ',volstr);
-    
+
 
 #ifdef _WIN32
     if (JesusonicAPI)
@@ -534,7 +534,7 @@ void showmainview(bool action=false, int ymove=0)
         g_client->NotifyServerOfChannelChange();
 
         const char *sname=g_audio->GetChannelName(0);
-        if (!sname) sname="Silence";        
+        if (!sname) sname="Silence";
 
         char snamebuf[32];
         if (strlen(sname)>16)
@@ -543,17 +543,17 @@ void showmainview(bool action=false, int ymove=0)
           strcat(snamebuf,sname+strlen(sname)-13);
           sname=snamebuf;
         }
-        
+
         char volstr[256];
         mkvolpanstr(volstr,1.0f,0.0f);
         sprintf(linebuf,"  [channel] [ ]xmit [%s] [ ]mute [%s] [del] %s<-120dB>",
           sname,
           volstr,
 #ifdef _WIN32
-          JesusonicAPI?"[js][ ] " : 
+          JesusonicAPI?"[js][ ] " :
 #endif
            ""
-          
+
           );
 
         action=false;
@@ -567,9 +567,12 @@ void showmainview(bool action=false, int ymove=0)
     }
     if (ypos < LINES-3)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       highlightoutline(ypos++,"  [new channel]",COLORMAP(0),COLORMAP(0),
                                  COLORMAP(0)|A_BOLD,COLORMAP(0),
                                  COLORMAP(5),COLORMAP(5),(g_sel_ypos != selpos++ || g_sel_ycat != selcat) ? -1 : g_sel_x);
+#pragma GCC diagnostic pop
     }
   }
 
@@ -609,7 +612,7 @@ void showmainview(bool action=false, int ymove=0)
       clrtoeol();
 	    bkgdset(COLORMAP(0));
 	    attrset(COLORMAP(0));
-      
+
     }
 
     if (ypos >= linemax) break;
@@ -658,14 +661,17 @@ void showmainview(bool action=false, int ymove=0)
 
     x++;
 
-    
+
   }
 
   if (!selpos && ypos < linemax)
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     highlightoutline(ypos++,"[no remote users]",COLORMAP(0),COLORMAP(0),
                                COLORMAP(0)|A_BOLD,COLORMAP(0),
                                COLORMAP(5),COLORMAP(5),(g_sel_ypos != selpos++ || g_sel_ycat != selcat) ? -1 : g_sel_x);
+#pragma GCC diagnostic pop
   }
 
   curs_ypos=LINES-1;
@@ -761,7 +767,7 @@ void showmainview(bool action=false, int ymove=0)
 
   ypos=LINES-1;
   sprintf(linebuf,"[QUIT NINJAM] : %s : %.1fBPM %dBPI : %dHz %dch->%dch %dbps%s",
-    g_client->GetHostName(),g_client->GetActualBPM(),g_client->GetBPI(),g_audio->m_srate,g_audio->m_innch,g_audio->m_outnch,g_audio->m_bps&~7,g_audio->m_bps&1 ? "(f)":"");
+    g_client->GetHostName(),g_client->GetActualBPM(),g_client->GetBPI(),g_audio->getSampleRate(),g_audio->getNInputChannels(),g_audio->getNOutputChannels(),g_audio->getBitDepth()&~7,g_audio->getBitDepth()&1 ? "(f)":"");
   highlightoutline(ypos++,linebuf,COLORMAP(1),COLORMAP(1),COLORMAP(1),COLORMAP(1),COLORMAP(5),COLORMAP(5),(g_sel_ypos != selpos || g_sel_ycat != selcat) ? -1 : g_sel_x);
   attrset(COLORMAP(1));
   bkgdset(COLORMAP(1));
@@ -775,7 +781,10 @@ void showmainview(bool action=false, int ymove=0)
   {
 	  bkgdset(COLORMAP(2));
 	  attrset(COLORMAP(2));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     char *p1="RENAME CHANNEL:";
+#pragma GCC diagnostic pop
 	  mvaddnstr(LINES-2,0,p1,COLS-1);
 	  bkgdset(COLORMAP(0));
 	  attrset(COLORMAP(0));
@@ -866,7 +875,7 @@ int licensecallback(int user32, char *licensetext)
       for (x = 0; x < linepos; x ++)
       {
         int yp=0;
-        while (*tp && *tp != '\n' && x < linepos) 
+        while (*tp && *tp != '\n' && x < linepos)
         {
           if (yp++ >= COLS-1)
           {
@@ -881,7 +890,7 @@ int licensecallback(int user32, char *licensetext)
       {
         move(x,0);
         int yp=0;
-        while (*tp && *tp != '\n' && x < LINES-1) 
+        while (*tp && *tp != '\n' && x < LINES-1)
         {
           if (yp++ >= COLS-1)
           {
@@ -912,7 +921,7 @@ int licensecallback(int user32, char *licensetext)
 	    bkgdset(COLORMAP(0));
 	    attrset(COLORMAP(0));
     }
-    
+
     int a=getch();
     switch (a)
     {
@@ -949,7 +958,7 @@ int licensecallback(int user32, char *licensetext)
 	    struct timespec ts={0,1000*1000};
 	    nanosleep(&ts,NULL);
 #endif
-    
+
   }
 
   showmainview();
@@ -979,7 +988,10 @@ int main(int argc, char **argv)
   {
     usage(1);
     printf("(no command line options specified, using interactive mode!)\n\n\nHost to connect to: ");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
     fgets(hostbuf,sizeof(hostbuf),stdin);
+#pragma GCC diagnostic pop
     if (hostbuf[0] && hostbuf[strlen(hostbuf)-1] == '\n') hostbuf[strlen(hostbuf)-1]=0;
     hostname=hostbuf;
     if (!hostbuf[0]) return 0;
@@ -990,7 +1002,7 @@ int main(int argc, char **argv)
   else hostname=argv[1];
 
 
-  
+
 
   {
     int p;
@@ -998,7 +1010,7 @@ int main(int argc, char **argv)
     {
       if (!stricmp(argv[p],"-savelocalwavs"))
       {
-        g_client->config_savelocalaudio=2;     
+        g_client->config_savelocalaudio=2;
       }
       else if (!stricmp(argv[p],"-nosavelocal"))
       {
@@ -1011,7 +1023,10 @@ int main(int argc, char **argv)
       }
       else if (!stricmp(argv[p],"-noaudiocfg"))
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         audioconfigstr="";
+#pragma GCC diagnostic pop
       }
       else if (!stricmp(argv[p],"-audiostr"))
       {
@@ -1074,7 +1089,10 @@ int main(int argc, char **argv)
   {
     parmuser=userbuf;
     printf("Enter username: ");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
     fgets(userbuf,sizeof(userbuf),stdin);
+#pragma GCC diagnostic pop
     if (userbuf[0] && userbuf[strlen(userbuf)-1] == '\n') userbuf[strlen(userbuf)-1]=0;
     if (!userbuf[0]) return 0;
   }
@@ -1084,7 +1102,10 @@ int main(int argc, char **argv)
     if (strncmp(parmuser,"anonymous",9) || (parmuser[9] && parmuser[9] != ':'))
     {
       printf("Enter password: ");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
       fgets(passbuf,sizeof(passbuf),stdin);
+#pragma GCC diagnostic pop
       if (passbuf[0] && passbuf[strlen(passbuf)-1] == '\n') passbuf[strlen(passbuf)-1]=0;
     }
   }
@@ -1108,7 +1129,7 @@ int main(int argc, char **argv)
     return 0;
   }
   printf("Opened at %dHz %d->%dch %dbps\n",
-    g_audio->m_srate, g_audio->m_innch, g_audio->m_outnch, g_audio->m_bps);
+    g_audio->getSampleRate(), g_audio->getNInputChannels(), g_audio->getNOutputChannels(), g_audio->getBitDepth());
 
   signal(SIGINT,sigfunc);
 
@@ -1130,7 +1151,7 @@ int main(int argc, char **argv)
 
     jesus_hDllInst = LoadLibrary(".\\jesus.dll"); // load from current dir
     if (!jesus_hDllInst) jesus_hDllInst = LoadLibrary(dll.Get());
-    if (jesus_hDllInst) 
+    if (jesus_hDllInst)
     {
       *(void **)(&JesusonicAPI) = (void *)GetProcAddress(jesus_hDllInst,"JesusonicAPI");
       if (JesusonicAPI && JesusonicAPI->ver == JESUSONIC_API_VERSION_CURRENT)
@@ -1146,14 +1167,17 @@ int main(int argc, char **argv)
   {
     FILE *fp=fopen("ninjam.config","rt");
     int x=0;
-    if (fp) 
+    if (fp)
     {
       bool comment_state=false;
       while (!feof(fp))
       {
         char buf[4096];
         buf[0]=0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
         fgets(buf,sizeof(buf),fp);
+#pragma GCC diagnostic pop
         if (!buf[0]) continue;
         if (buf[strlen(buf)-1] == '\n')
           buf[strlen(buf)-1]=0;
@@ -1175,7 +1199,7 @@ int main(int argc, char **argv)
               {
                 switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0jesus\0name\0"))
                 {
-                  case 0: // source 
+                  case 0: // source
                     g_client->SetLocalChannelInfo(ch,NULL,true,lp.gettoken_int(n+1),false,0,false,false);
                   break;
                   case 1: //broadcast
@@ -1197,7 +1221,7 @@ int main(int argc, char **argv)
                     if (lp.gettoken_int(n+1))
                     {
 #ifdef _WIN32
-                      void *p=CreateJesusInstance(ch,"",g_audio->m_srate);
+                      void *p=CreateJesusInstance(ch,"",g_audio->getSampleRate());
                       if (p) g_client->SetLocalChannelProcessor(ch,jesusonic_processor,p);
 #endif
                     }
@@ -1246,23 +1270,23 @@ int main(int argc, char **argv)
           break;
           default:
           break;
-        }       
+        }
 
 
       }
       fclose(fp);
-    }    
+    }
     else // set up defaults
     {
       g_client->SetLocalChannelInfo(0,"channel0",true,0,false,0,true,true);
       g_client->SetLocalChannelMonitoring(0,false,0.0f,false,0.0f,false,false,false,false);
     }
-  } 
+  }
 
   if (!sessiondir.Get()[0])
   {
     char buf[512];
-    
+
     int cnt=0;
     while (cnt < 16)
     {
@@ -1288,14 +1312,14 @@ int main(int argc, char **argv)
 
       cnt++;
     }
-    
+
     if (cnt >= 16)
     {
       printf("Error creating session directory\n");
       buf[0]=0;
       return 0;
     }
-      
+
     sessiondir.Set(buf);
   }
   else
@@ -1319,14 +1343,14 @@ int main(int argc, char **argv)
     WDL_String wf;
     wf.Set(sessiondir.Get());
     wf.Append("output.wav");
-    g_client->waveWrite = new WaveWriter(wf.Get(),24,g_audio->m_outnch>1?2:1,g_audio->m_srate);
+    g_client->waveWrite = new WaveWriter(wf.Get(),24,g_audio->getNOutputChannels()>1?2:1,g_audio->getSampleRate());
   }
   if (writeogg)
   {
     WDL_String wf;
     wf.Set(sessiondir.Get());
     wf.Append("output.ogg");
-    g_client->SetOggOutFile(fopen(wf.Get(),"ab"),g_audio->m_srate,g_audio->m_outnch>1?2:1,writeogg);
+    g_client->SetOggOutFile(fopen(wf.Get(),"ab"),g_audio->getSampleRate(),g_audio->getNOutputChannels()>1?2:1,writeogg);
   }
   if (!nolog)
   {
@@ -1335,7 +1359,7 @@ int main(int argc, char **argv)
     lf.Append("clipsort.log");
     g_client->SetLogFile(lf.Get());
   }
- 
+
   printf("Connecting to %s...\n",hostname);
   g_client->Connect(hostname,parmuser,parmpass);
   g_audio_enable=1;
@@ -1426,10 +1450,10 @@ int main(int argc, char **argv)
 #ifdef _WIN32
   && IsWindow(CURSES_INSTANCE->cursesCtx.m_hwnd)
 #endif
-    
+
     )
   {
-    if (g_client->Run()) 
+    if (g_client->Run())
     {
 #ifdef _WIN32
       MSG msg;
@@ -1451,7 +1475,7 @@ int main(int argc, char **argv)
 			static int stage;
 			timeval now;
 			gettimeofday(&now,NULL);
-			if (a != ERR || (stage && 
+			if (a != ERR || (stage &&
 				  ((long long) (((now.tv_sec-last_t.tv_sec) * 1000) + ((now.tv_usec-last_t.tv_usec)/1000)))>333
 
 				))
@@ -1463,7 +1487,7 @@ int main(int argc, char **argv)
 				{
 					a = KEY_F(a-79);
 					stage=0;
-				} 
+				}
 				else if (stage) { a = 27; stage=0; }
 			}
 		}
@@ -1524,7 +1548,7 @@ int main(int argc, char **argv)
                         g_client->ChatMessage_Send("MSG",m_chatinput_str);
                       }
                       else if (!strncasecmp(m_chatinput_str,"/topic ",7)||
-                               !strncasecmp(m_chatinput_str,"/kick ",6) ||                        
+                               !strncasecmp(m_chatinput_str,"/kick ",6) ||
                                !strncasecmp(m_chatinput_str,"/bpm ",5) ||
                                !strncasecmp(m_chatinput_str,"/bpi ",5)
                         ) // alias to /admin *
@@ -1571,7 +1595,7 @@ int main(int argc, char **argv)
                     }
 
 
-                    m_chatinput_str[0]=0;                    
+                    m_chatinput_str[0]=0;
                     showmainview();
                   }
                 break;
@@ -1581,17 +1605,17 @@ int main(int argc, char **argv)
                     showmainview();
                   }
                 break;
-					      case KEY_BACKSPACE: 
-                  if (m_chatinput_str[0]) m_chatinput_str[strlen(m_chatinput_str)-1]=0; 
+					      case KEY_BACKSPACE:
+                  if (m_chatinput_str[0]) m_chatinput_str[strlen(m_chatinput_str)-1]=0;
                   showmainview();
 					      break;
                 default:
                   if (VALIDATE_TEXT_CHAR(a))
-						      { 
-							      int l=strlen(m_chatinput_str); 
+						      {
+							      int l=strlen(m_chatinput_str);
 							      if (l < (int)sizeof(m_chatinput_str)-1) { m_chatinput_str[l]=a; m_chatinput_str[l+1]=0; }
                     showmainview();
-						      } 
+						      }
                 break;
               }
             }
@@ -1608,7 +1632,7 @@ int main(int argc, char **argv)
                 int ok=0;
                 if (g_ui_voltweakstate_channel == -2) { ok=1; pan=(float)g_client->config_masterpan; }
                 else if (g_ui_voltweakstate_channel == -1) { pan=(float)g_client->config_metronome_pan; ok=1; }
-                else if (g_ui_voltweakstate_channel >= 1024) 
+                else if (g_ui_voltweakstate_channel >= 1024)
                   ok=!!g_client->GetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, NULL,NULL,&pan,NULL);
                 else ok=!g_client->GetLocalChannelMonitoring(g_ui_voltweakstate_channel,NULL,&pan,NULL,NULL);
 
@@ -1636,7 +1660,7 @@ int main(int argc, char **argv)
                 int ok=0;
                 if (g_ui_voltweakstate_channel == -2) { ok=1; vol=(float)g_client->config_mastervolume; }
                 else if (g_ui_voltweakstate_channel == -1) { vol=(float)g_client->config_metronome; ok=1; }
-                else if (g_ui_voltweakstate_channel >= 1024) 
+                else if (g_ui_voltweakstate_channel >= 1024)
                   ok=!!g_client->GetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, NULL,&vol,NULL,NULL,NULL);
                 else ok=!g_client->GetLocalChannelMonitoring(g_ui_voltweakstate_channel,&vol,NULL,NULL,NULL);
 
@@ -1677,7 +1701,7 @@ int main(int argc, char **argv)
               {
                 int ch=0;
                 g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL);
-                if (ch > 0) 
+                if (ch > 0)
                 {
                   ch--;
                   g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false);
@@ -1692,7 +1716,7 @@ int main(int argc, char **argv)
               {
                 int ch=0;
                 g_client->GetLocalChannelInfo(g_ui_locrename_ch,&ch,NULL,NULL);
-                if (ch < g_audio->m_innch) 
+                if (ch < g_audio->getNInputChannels())
                 {
                   ch++;
                   g_client->SetLocalChannelInfo(g_ui_locrename_ch,NULL,true,ch,false,0,false,false);
@@ -1701,7 +1725,7 @@ int main(int argc, char **argv)
                 }
               }
             break;
-            
+
             case 27: case '\r':
               {
                 g_ui_state=0;
@@ -1732,15 +1756,15 @@ int main(int argc, char **argv)
                 showmainview();
               }
             break;
-					  case KEY_BACKSPACE: 
-              if (m_lineinput_str[0]) m_lineinput_str[strlen(m_lineinput_str)-1]=0; 
+					  case KEY_BACKSPACE:
+              if (m_lineinput_str[0]) m_lineinput_str[strlen(m_lineinput_str)-1]=0;
               showmainview();
               g_ui_state=4;
 					  break;
             default:
               if (VALIDATE_TEXT_CHAR(a) && (g_ui_state != 3 || (a >= '0' && a <= '9'))) //fucko: 9 once we have > 2ch
-						  { 
-							  int l=strlen(m_lineinput_str); 
+						  {
+							  int l=strlen(m_lineinput_str);
                 if (g_ui_state == 2)
                 {
                   l=0;
@@ -1749,7 +1773,7 @@ int main(int argc, char **argv)
 
 							  if (l < (int)sizeof(m_lineinput_str)-1) { m_lineinput_str[l]=a; m_lineinput_str[l+1]=0; }
                 showmainview();
-						  } 
+						  }
             break;
           }
         }
@@ -1757,7 +1781,7 @@ int main(int argc, char **argv)
 
       if (g_ui_state < 2 && (g_need_disp_update||g_client->HasUserInfoChanged()||
 #ifdef _WIN32
-GetTickCount()>=nextupd 
+GetTickCount()>=nextupd
 #else
 time(NULL) >= nextupd
 #endif
@@ -1823,7 +1847,7 @@ time(NULL) >= nextupd
   {
     FILE *fp=fopen("ninjam.config","wt");
     int x=0;
-    if (fp) 
+    if (fp)
     {
       fprintf(fp,"master mastervol %f masterpan %f metrovol %f metropan %f mastermute %d metromute %d\n",
         g_client->config_mastervolume,g_client->config_masterpan,g_client->config_metronome,g_client->config_metronome_pan,
@@ -1843,7 +1867,7 @@ time(NULL) >= nextupd
         char *lcn;
         float v=0.0f,p=0.0f;
         bool m=0,s=0;
-      
+
         lcn=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc);
         g_client->GetLocalChannelMonitoring(a,&v,&p,&m,&s);
         g_client->GetLocalChannelProcessor(a,NULL,&has_jesus);
@@ -1857,7 +1881,7 @@ time(NULL) >= nextupd
         fprintf(fp,"local %d source %d bc %d mute %d solo %d volume %f pan %f jesus %d name `%s`\n",a,sch,bc,m,s,v,p,!!has_jesus,lcn);
       }
       fclose(fp);
-    }    
+    }
   }
 
 
@@ -1909,7 +1933,7 @@ time(NULL) >= nextupd
             {
               WDL_String t;
               ds.GetCurrentFullFN(&t);
-              unlink(t.Get());          
+              unlink(t.Get());
             }
           }
           while (!ds.Next());
@@ -1929,7 +1953,7 @@ time(NULL) >= nextupd
 #else
       rmdir(sessiondir.Get());
 #endif
-   
+
   }
 
   JNL::close_socketlib();
