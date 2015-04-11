@@ -6,9 +6,8 @@ INSTALLDIR=$(DESTDIR)$(PREFIX)
 # CPU optimization section
 #############################################################
 
-OPTFLAGS =  -O2
-
-LFLAGS = -lm -L../.. -lninjam-client -lninjam-common
+OPTFLAGS = -O2
+LFLAGS = -lm -L../../build/lib -lninjam-client -lninjam-common
 ifdef MAC
 OPTFLAGS += -D_MAC -mcpu=7450
 LFLAGS += -framework coreaudio -lncurses.5
@@ -27,24 +26,28 @@ endif
 #############################################################
 
 # we MUST have -fomit-frame-pointer and -lm, otherwise we hate life
-CFLAGS = $(OPTFLAGS) -s -I../..
+CFLAGS = $(OPTFLAGS) -s -Wall -Wextra -I../
 # CFLAGS += -Wshadow
 CC=gcc
 CXX=g++
-
-OBJS = cursesclient.o
-
-
 CXXFLAGS = $(CFLAGS)
+
+OBJS = ../../build/obj/cursesclient/cursesclient.o
+
+
+../../build/obj/cursesclient/%.o: %.cpp
+	mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 default: cninjam
 
 cninjam: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o cninjam $(OBJS) -lpthread $(LFLAGS)
+	$(CXX) $(CXXFLAGS) -o ../../build/cninjam $(OBJS) -lpthread $(LFLAGS)
 
 clean:
-	-rm $(OBJS) cninjam
+	-rm $(OBJS) ../../build/cninjam
 
-install: cninjam
-	mkdir -p $(INSTALLDIR)/bin
-	install cninjam $(INSTALLDIR)/bin
+install: default
+	mkdir -p                    $(INSTALLDIR)/bin
+	install ../../build/cninjam $(INSTALLDIR)/bin
+
