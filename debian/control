@@ -1,5 +1,5 @@
 Source: ninjam
-Section: unknown
+Section: web
 Priority: optional
 Maintainer: Tobias Gehrig <tobias@gehrignet.de>
 Build-Depends: debhelper (>= 5), libvorbis-dev, libjack-dev, libasound2-dev, libncurses5-dev
@@ -15,7 +15,6 @@ Description: Development files for libninjam-common
  Each user can also tweak their personal mix to his or her liking.
 
 Package: libninjam-common
-Section: lib
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Realtime Music Collaboration Software (Common Library)
@@ -33,7 +32,6 @@ Description: Development files for libninjam-client
  Each user can also tweak their personal mix to his or her liking.
 
 Package: libninjam-client
-Section: lib
 Architecture: any
 Depends: libninjam-common (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Realtime Music Collaboration Software (Client Library)
