@@ -17,11 +17,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-/*
+/*\
+|*| This file implements the AudioStreamer subclass for CoreAudio.
+|*|   * audioStreamer_CoreAudio // audioStreamer subclass
+|*| Instantiation is exposed only through class methods of the AudioStreamer superclass.
+|*|   * audioStreamer::NewCA()
+\*/
 
-  This file implements the audioStream interface for CoreAudio devices.
-  
-*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -32,10 +35,20 @@
 
 #include "audiostream.h"
 
-static SPLPROC _splproc;
-
 #include </System/Library/Frameworks/CoreAudio.framework/Headers/AudioHardware.h>
-		
+
+
+/* audioStreamer public class constants */
+
+const std::string audioStreamer::DEFAULT_CA_INPUT_NAME  = "" ;
+const std::string audioStreamer::DEFAULT_CA_OUTPUT_NAME = "" ;
+const char*       audioStreamer::CA_ARGS_FMT            = "%s" ;
+
+
+/* audioStreamer public class variables */
+
+SPLPROC audioStreamer::OnSamples                    = NULL ;
+
 
 class audioStreamer_CoreAudio  : public audioStreamer
 {
@@ -85,7 +98,7 @@ static void onsamples_old(float *inbuf, int innch, float *outbuf, int outnch, in
   if (spltemp.GetSize() < sz) spltemp.Resize(sz);
   int x;
   float *t=(float*)spltemp.Get();
-  for (x = 0; x < innch; x ++) 
+  for (x = 0; x < innch; x ++)
   {
     float *s=inbuf+x;
     inptrs[x]=t;
@@ -98,7 +111,7 @@ static void onsamples_old(float *inbuf, int innch, float *outbuf, int outnch, in
   }
   float *outptrs[2]={t,t+nsamples};
 
-  if (_splproc) _splproc(inptrs,innch,outptrs,2,nsamples,srate);
+  if (!!audioStreamer::OnSamples) audioStreamer::OnSamples(inptrs , innch , outptrs , 2 , nsamples , srate) ;
 
   float *p1=outptrs[0];
   float *p2=outptrs[1];
@@ -111,7 +124,7 @@ static void onsamples_old(float *inbuf, int innch, float *outbuf, int outnch, in
       if (outnch > 1) outbuf[outchtab[1]]=*p2++;
       outbuf += outnch;
     }
-  } 
+  }
   else
   {
     outnch=-outnch;
@@ -122,7 +135,7 @@ static void onsamples_old(float *inbuf, int innch, float *outbuf, int outnch, in
       outbuf += outnch;
     }
   }
-  
+
 }
 
 static pthread_mutex_t m_mutex;
@@ -132,12 +145,12 @@ static int outchbuf=0;
 static float *ca_tmpbuf;
 static int ca_tmpbuf_size;
 
-OSStatus caIOproc(AudioDeviceID dev, 
-			const AudioTimeStamp* inNow, 
-			const AudioBufferList* inInputData, 
-			const AudioTimeStamp* inInputTime, 
+OSStatus caIOproc(AudioDeviceID dev,
+			const AudioTimeStamp* inNow,
+			const AudioBufferList* inInputData,
+			const AudioTimeStamp* inInputTime,
 			AudioBufferList* outOutputData,
-			const AudioTimeStamp* inOutputTime, 
+			const AudioTimeStamp* inOutputTime,
 			void* inClientData)
 {
   // process inInputData to outOutputData
@@ -165,12 +178,12 @@ OSStatus caIOproc(AudioDeviceID dev,
   return 0;
 }
 
-OSStatus caInproc(AudioDeviceID dev, 
-			const AudioTimeStamp* inNow, 
-			const AudioBufferList* inInputData, 
-			const AudioTimeStamp* inInputTime, 
+OSStatus caInproc(AudioDeviceID dev,
+			const AudioTimeStamp* inNow,
+			const AudioBufferList* inInputData,
+			const AudioTimeStamp* inInputTime,
 			AudioBufferList* outOutputData,
-			const AudioTimeStamp* inOutputTime, 
+			const AudioTimeStamp* inOutputTime,
 			void* inClientData)
 {
   // process inInputData to outOutputData
@@ -191,7 +204,7 @@ OSStatus caInproc(AudioDeviceID dev,
         	onsamples_old((float*)in,in_nch,(float *)ca_tmpbuf,-2,c,g_srate);
 
 		pthread_mutex_lock(&m_mutex);
-		
+
 		m_splbuf.Add(ca_tmpbuf,needsize);
 
 		pthread_mutex_unlock(&m_mutex);
@@ -202,12 +215,12 @@ OSStatus caInproc(AudioDeviceID dev,
   return 0;
 }
 
-OSStatus caOutproc(AudioDeviceID dev, 
-			const AudioTimeStamp* inNow, 
-			const AudioBufferList* inInputData, 
-			const AudioTimeStamp* inInputTime, 
+OSStatus caOutproc(AudioDeviceID dev,
+			const AudioTimeStamp* inNow,
+			const AudioBufferList* inInputData,
+			const AudioTimeStamp* inInputTime,
 			AudioBufferList* outOutputData,
-			const AudioTimeStamp* inOutputTime, 
+			const AudioTimeStamp* inOutputTime,
 			void* inClientData)
 {
   // process inInputData to outOutputData
@@ -237,14 +250,14 @@ OSStatus caOutproc(AudioDeviceID dev,
   return 0;
 }
 
-audioStreamer_CoreAudio::audioStreamer_CoreAudio() 
+audioStreamer_CoreAudio::audioStreamer_CoreAudio()
 {
         m_myDev_i=0;
         m_myDev_o=0;
     	m_started=0;
 }
 
-audioStreamer_CoreAudio::~audioStreamer_CoreAudio() 
+audioStreamer_CoreAudio::~audioStreamer_CoreAudio()
 {
  	if (m_started)
         {
@@ -261,7 +274,7 @@ audioStreamer_CoreAudio::~audioStreamer_CoreAudio()
 	                AudioDeviceRemoveIOProc(m_myDev_i,caIOproc);
 		}
         }
-         
+
 }
 
 
@@ -282,11 +295,11 @@ int audioStreamer_CoreAudio::Open(char **dev, int srate, int nch, int bps)
 #ifndef AUDIOSTREAMER_NO_CONSOLEUI
   char user_buf[512];
 #endif
- 
 
-	UInt32 theSize; 
-	int s = AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &theSize, NULL ); 
-        int theNumberDevices = theSize / sizeof(AudioDeviceID); 
+
+	UInt32 theSize;
+	int s = AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &theSize, NULL );
+        int theNumberDevices = theSize / sizeof(AudioDeviceID);
         if (!theNumberDevices)
         {
           printf("No CoreAudio devices found!\n");
@@ -306,14 +319,14 @@ again:
           while (*outdev_ptr == ' ') outdev_ptr++;
           if (!*outdev_ptr) outdev_ptr=indev_ptr;
         } else outdev_ptr=indev_ptr;
-        
+
         int outm=0,inm=0;
         printf("CoreAudio device list:\n");
         for (s = 0; s < theNumberDevices; s ++)
         {
           AudioDeviceID myDev;
           myDev = list[s];
-          UInt32 os=0; 
+          UInt32 os=0;
           Boolean ow;
           AudioDeviceGetPropertyInfo(myDev,0,0,kAudioDevicePropertyDeviceName,&os,&ow);
           if (os > 0)
@@ -325,7 +338,7 @@ again:
 		{
 			int flags=0;
 	    		int i;
-	  
+
 			for (i = 0; i <2; i ++)
 			{
   			    UInt32 nos=0; Boolean now;
@@ -334,7 +347,7 @@ again:
 		            {
 		               AudioBufferList *buf2=(AudioBufferList *)malloc(nos);
 		               AudioDeviceGetProperty(myDev,0,i,kAudioDevicePropertyStreamConfiguration,&nos,buf2);
-		               if (nos>=sizeof(AudioBufferList)) 
+		               if (nos>=sizeof(AudioBufferList))
 		               {
 		                 flags |= 1<<i;
 		 	       }
@@ -347,15 +360,15 @@ again:
                           if (ml > outm) { outm=ml; m_myDev_o = myDev; }
 
  			  printf("  '%s' %s%s%s",buf,flags&2?"Input":"",flags==3?"/":"",flags&1?"Output":"");
-	
+
 		}
-	 
+
             printf("\n");
             free(buf);
           }
         }
 
-        if (!m_myDev_i || !m_myDev_o) 
+        if (!m_myDev_i || !m_myDev_o)
         {
     #ifndef AUDIOSTREAMER_NO_CONSOLEUI
         printf("Type in the beginning of the name of your sound hardware now (or leave blank for system defaults)\n");
@@ -365,7 +378,7 @@ again:
         user_buf[0]=0;
         fgets(user_buf,sizeof(user_buf),stdin);
         olddev=user_buf;
-        if (user_buf[0] && user_buf[0] != '\r'  && user_buf[0] != '\n') 
+        if (user_buf[0] && user_buf[0] != '\r'  && user_buf[0] != '\n')
         {
 		goto again;
         }
@@ -375,7 +388,7 @@ again:
         theSize=sizeof(AudioDeviceID);
         if (!m_myDev_o) AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice,&theSize,&m_myDev_o);
 	}
-          
+
 
         free(list);
 
@@ -383,22 +396,22 @@ again:
         for (isinput=0;isinput<2;isinput++)
         {
           AudioDeviceID myDev = isinput ? m_myDev_i : m_myDev_o;
-	  
-          UInt32 os=0; 
+
+          UInt32 os=0;
           Boolean ow;
 	  AudioStreamBasicDescription d={0,};
 	  os=sizeof(d);
           AudioDeviceGetProperty(myDev,0,isinput,kAudioDevicePropertyStreamFormat,&os,&d);
-	  if (os > 0) 
-  	  {  
+	  if (os > 0)
+  	  {
 		d.mSampleRate=srate;
 		os=sizeof(d);
 //          	AudioDeviceSetProperty(myDev,NULL,0,isinput,kAudioDevicePropertyStreamFormat,os,&d);
           	AudioDeviceGetProperty(myDev,0,isinput,kAudioDevicePropertyStreamFormat,&os,&d);
-		if (os>0) g_srate=m_srate=(int)d.mSampleRate; 
+		if (os>0) g_srate=m_srate=(int)d.mSampleRate;
  	 }
           AudioDeviceGetPropertyInfo(myDev,0,isinput,kAudioDevicePropertyStreamConfiguration,&os,&ow);
-          if (os > 0) 
+          if (os > 0)
           {
              AudioBufferList *buf=(AudioBufferList *)malloc(os);
              AudioDeviceGetProperty(myDev,0,isinput,kAudioDevicePropertyStreamConfiguration,&os,buf);
@@ -409,7 +422,7 @@ again:
                 int y;
                 for (y = 0; y < (int)buf[x].mNumberBuffers; y++)
 		{
-                   if (buf[x].mBuffers[y].mNumberChannels) 
+                   if (buf[x].mBuffers[y].mNumberChannels)
                       printf("    buffer %d: %d channels\n",y,(int)buf[x].mBuffers[y].mNumberChannels);
 		   if (y == inchbuf && !x && buf[x].mBuffers[y].mNumberChannels)
 			m_innch = buf[x].mBuffers[y].mNumberChannels;
@@ -425,7 +438,7 @@ again:
 		return -1;
 	  }
        }
-      
+
        m_started=1;
        if (m_myDev_o != m_myDev_i)
  	{
@@ -458,17 +471,33 @@ int audioStreamer_CoreAudio::Write(char *buf, int len) // returns 0 on success
 }
 
 
-audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, int bps, SPLPROC proc)
-{
-    _splproc = proc;
-    audioStreamer_CoreAudio *audio;
-    
-    audio=new audioStreamer_CoreAudio;
+/* audioStreamer public constructors */
 
-    if (audio->Open(dev,srate,nch,bps))
-    {
-      delete audio;
-      return 0;
-    }
-    return audio;
+audioStreamer* audioStreamer::NewCA(SPLPROC     on_samples_cb                             ,
+                                    std::string input_device  , std::string output_device ,
+                                    int         n_channels    , int         sample_rate   ,
+                                    int         bit_depth                                 )
+{
+// TODO: the CA "constructor" requires writable memory for device names
+//         but we are ignoring the result for now
+//       these should be instance vars with public accessors
+
+  OnSamples = on_samples_cb ;
+
+  const int n_bytes    = (NINJAM::MAX_DEVICE_NAME_LEN * 2) + 1 ; // 2 devs + comma
+  char  cli_args_buffer[n_bytes] ;
+  char* cli_args       = cli_args_buffer ;
+
+  if (output_device.empty?) output_device = ',' + output_device ;
+  snprintf(cli_args_buffer , n_bytes , CA_ARGS_FMT , input_device .c_str() ,
+                                                     output_device.c_str() ) ;
+
+  audioStreamer_CoreAudio* ca_streamer = new audioStreamer_CoreAudio() ;
+
+  if (ca_streamer->Open(&cli_args , sample_rate , n_channels , bit_depth))
+  {
+    delete ca_streamer ; return NULL ;
+  }
+
+  return ca_streamer ;
 }

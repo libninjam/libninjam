@@ -22,7 +22,7 @@ JNL_HTTPGet::JNL_HTTPGet(JNL_AsyncDNS *dns, int recvbufsize, char *proxy)
   if (proxy && *proxy)
   {
     char *p=(char*)malloc(strlen(proxy)+1);
-    if (p) 
+    if (p)
     {
       char *r=NULL;
       strcpy(p,proxy);
@@ -77,7 +77,7 @@ void JNL_HTTPGet::addheader(const char *header)
   if (!m_sendheaders)
   {
     m_sendheaders=(char*)malloc(strlen(header)+3);
-    if (m_sendheaders) 
+    if (m_sendheaders)
     {
       strcpy(m_sendheaders,header);
       strcat(m_sendheaders,"\r\n");
@@ -120,13 +120,13 @@ void JNL_HTTPGet::do_encode_mimestr(char *in, char *out)
   if (shift == 4)
   {
     *out++ = alphabet[(accum & 0xF)<<2];
-    *out++='=';  
+    *out++='=';
   }
   else if (shift == 2)
   {
     *out++ = alphabet[(accum & 0x3)<<4];
-    *out++='=';  
-    *out++='=';  
+    *out++='=';
+    *out++='=';
   }
 
   *out++=0;
@@ -143,7 +143,10 @@ void JNL_HTTPGet::connect(const char *url, int ver, char *requestmethod)
   if (!m_http_host || !m_http_host[0] || !m_http_port)
   {
     m_http_state=-1;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     seterrstr("invalid URL");
+#pragma GCC diagnostic pop
     return;
   }
 
@@ -173,8 +176,11 @@ void JNL_HTTPGet::connect(const char *url, int ver, char *requestmethod)
   char *str=(char*)malloc(sendbufferlen+1024);
   if (!str)
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     seterrstr("error allocating memory");
-    m_http_state=-1;    
+#pragma GCC diagnostop
+    m_http_state=-1;
   }
 
   if (!m_http_proxyhost || !m_http_proxyhost[0])
@@ -222,7 +228,10 @@ void JNL_HTTPGet::connect(const char *url, int ver, char *requestmethod)
   else
   {
     m_http_state=-1;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     seterrstr("could not create connection object");
+#pragma GCC diagnostic pop
   }
   free(str);
 
@@ -243,8 +252,8 @@ void JNL_HTTPGet::do_parse_url(char *url, char **host, int *port, char **req, ch
     *req=(char*)malloc(strlen(np)+1);
     if (*req) strcpy(*req,np);
     *np++=0;
-  } 
-  else 
+  }
+  else
   {
     *req=(char*)malloc(2);
     if (*req) strcpy(*req,"/");
@@ -259,7 +268,7 @@ void JNL_HTTPGet::do_parse_url(char *url, char **host, int *port, char **req, ch
     if (*lp) strcpy(*lp,p);
     p=np;
   }
-  else 
+  else
   {
     *lp=(char*)malloc(1);
     if (*lp) strcpy(*lp,"");
@@ -278,8 +287,11 @@ void JNL_HTTPGet::do_parse_url(char *url, char **host, int *port, char **req, ch
 
 char *JNL_HTTPGet::getallheaders()
 { // double null terminated, null delimited list
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   if (m_recvheaders) return m_recvheaders;
   else return "\0\0";
+#pragma GCC diagnostic pop
 }
 
 char *JNL_HTTPGet::getheader(char *headername)
@@ -329,14 +341,14 @@ run_again:
       buf[4095]=0;
       m_reply=(char*)malloc(strlen(buf)+1);
       strcpy(m_reply,buf);
-    
+
       int code=getreplycode();
       if (code == 200 || code==206) m_http_state=2; // proceed to read headers normally
-      else if (code == 301 || code==302) 
+      else if (code == 301 || code==302)
       {
         m_http_state=1; // redirect city
       }
-      else 
+      else
       {
         seterrstr(buf);
         m_http_state=-1;
@@ -352,7 +364,7 @@ run_again:
     {
       char buf[4096];
       m_con->recv_line(buf,4096);
-      if (!buf[0])  
+      if (!buf[0])
       {
         m_http_state=-1;
         return -1;
@@ -362,7 +374,10 @@ run_again:
         char *p=buf+9; while (*p== ' ') p++;
         if (*p)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           connect(p);
+#pragma GCC diagnostic pop
           return 0;
         }
       }
@@ -408,7 +423,7 @@ run_again:
   return 0;
 }
 
-int JNL_HTTPGet::get_status() // returns 0 if connecting, 1 if reading headers, 
+int JNL_HTTPGet::get_status() // returns 0 if connecting, 1 if reading headers,
                     // 2 if reading content, -1 if error.
 {
   if (m_http_state < 0) return -1;

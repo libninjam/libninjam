@@ -1,11 +1,11 @@
 /*
     WDL - lineparse.h
     Copyright (C) 2005 Cockos Incorporated
-    Copyright (C) 1999-2004 Nullsoft, Inc. 
+    Copyright (C) 1999-2004 Nullsoft, Inc.
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
+    WDL is dual-licensed. You may modify and/or distribute WDL under either of
     the following  licenses:
-    
+
       This software is provided 'as-is', without any express or implied
       warranty.  In no event will the authors be held liable for any damages
       arising from the use of this software.
@@ -21,7 +21,7 @@
       2. Altered source versions must be plainly marked as such, and must not be
          misrepresented as being the original software.
       3. This notice may not be removed or altered from any source distribution.
-      
+
 
     or:
 
@@ -43,12 +43,12 @@
 /*
 
   This file provides a simple line parsing class. This class is also used in NSIS,
-  http://nsis.sf.net. In particular, it allows for multiple space delimited tokens 
-  on a line, with a choice of three quotes (`bla`, 'bla', or "bla") to contain any 
+  http://nsis.sf.net. In particular, it allows for multiple space delimited tokens
+  on a line, with a choice of three quotes (`bla`, 'bla', or "bla") to contain any
   items that may have spaces.
 
   For a bigger reference on the format, you can refer to NSIS's documentation.
-  
+
 */
 
 #ifndef WDL_LINEPARSE_H_
@@ -65,12 +65,12 @@ class LineParser {
       m_nt=m_eat=0;
       m_tokens=0;
     }
-    
+
     ~LineParser()
     {
       freetokens();
     }
-    
+
     bool InCommentBlock()
     {
       return m_bCommentBlock;
@@ -79,11 +79,11 @@ class LineParser {
 
     void eattoken() { m_eat++; }
 
-#define WDL_LINEPARSE_PREFIX 
+#define WDL_LINEPARSE_PREFIX
 #else
 #define WDL_LINEPARSE_PREFIX LineParser::
 #endif
-    
+
     int WDL_LINEPARSE_PREFIX parse(const char *line, int ignore_escaping
 #ifdef WDL_LINEPARSE_INTF_ONLY
       =1); // returns -1 on error
@@ -98,12 +98,12 @@ class LineParser {
       bool bPrevCB=m_bCommentBlock;
       int n=doline(line, ignore_escaping);
       if (n) return n;
-      if (m_nt) 
+      if (m_nt)
       {
         m_bCommentBlock=bPrevCB;
         m_tokens=(char**)malloc(sizeof(char*)*m_nt);
         n=doline(line, ignore_escaping);
-        if (n) 
+        if (n)
         {
           freetokens();
           return -1;
@@ -126,7 +126,7 @@ class LineParser {
 #endif
     {
       token+=m_eat;
-      if (token < 0 || token >= m_nt) 
+      if (token < 0 || token >= m_nt)
       {
         if (success) *success=0;
         return 0.0;
@@ -135,7 +135,7 @@ class LineParser {
       {
         char *t=m_tokens[token];
         *success=*t?1:0;
-        while (*t) 
+        while (*t)
         {
           if ((*t < '0' || *t > '9')&&*t != '.') *success=0;
           t++;
@@ -154,9 +154,9 @@ class LineParser {
 #else
     =0)
 #endif
-    { 
+    {
       token+=m_eat;
-      if (token < 0 || token >= m_nt || !m_tokens[token][0]) 
+      if (token < 0 || token >= m_nt || !m_tokens[token][0])
       {
         if (success) *success=0;
         return 0;
@@ -169,14 +169,17 @@ class LineParser {
       return l;
     }
 #endif
-    char * WDL_LINEPARSE_PREFIX gettoken_str(int token) 
+    char * WDL_LINEPARSE_PREFIX gettoken_str(int token)
 #ifdef WDL_LINEPARSE_INTF_ONLY
       ;
 #else
-    { 
+    {
       token+=m_eat;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       if (token < 0 || token >= m_nt) return "";
-      return m_tokens[token]; 
+#pragma GCC diagnostic pop
+      return m_tokens[token];
     }
 #endif
     int WDL_LINEPARSE_PREFIX gettoken_enum(int token, const char *strlist) // null seperated list
@@ -240,7 +243,7 @@ class LineParser {
         }
       }
       while (*line == ' ' || *line == '\t') line++;
-      while (*line) 
+      while (*line)
       {
         int lstate=0; // 1=", 2=`, 4='
         if (*line == ';' || *line == '#') break;
@@ -303,7 +306,7 @@ class LineParser {
       return 0;
     }
 #endif
-    
+
 #ifndef WDL_LINEPARSE_IMPL_ONLY
     int m_eat;
     int m_nt;

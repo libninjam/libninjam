@@ -19,9 +19,9 @@
 
 /*
 
-  This file does the setup and configuration file management for the server. 
-  Note that the kernel of the server is basically in usercon.cpp/.h, which 
-  includes a User_Connection class (manages a user) and a User_Group class 
+  This file does the setup and configuration file management for the server.
+  Note that the kernel of the server is basically in usercon.cpp/.h, which
+  includes a User_Connection class (manages a user) and a User_Group class
   (manages a jam).
 
 */
@@ -69,8 +69,8 @@ void logText(char *s, ...);
 class UserPassEntry
 {
 public:
-  UserPassEntry() {priv_flag=0;} 
-  ~UserPassEntry() {} 
+  UserPassEntry() {priv_flag=0;}
+  ~UserPassEntry() {}
   WDL_String name, pass;
   unsigned int priv_flag;
 };
@@ -147,7 +147,10 @@ public:
 
     if (!strncmp(username.Get(),"anonymous",9) && (!username.Get()[9] || username.Get()[9] == ':'))
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("got anonymous request (%s)\n",g_config_allowanonymous?"allowing":"denying");
+#pragma GCC diagnostic pop
       if (!g_config_allowanonymous) return 1;
 
       user_valid=1;
@@ -195,13 +198,16 @@ public:
     else
     {
       int x;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("got login request for '%s'\n",username.Get());
+#pragma GCC diagnostic pop
       if (g_status_user.Get()[0] && !strcmp(username.Get(),g_status_user.Get()))
       {
         user_valid=1;
         reqpass=1;
         is_status=1;
-        privs=0; 
+        privs=0;
         max_channels=0;
 
         WDL_SHA1 shatmp;
@@ -226,7 +232,7 @@ public:
 
           shatmp.result(sha1buf_user);
 
-          privs=g_userlist.Get(x)->priv_flag; 
+          privs=g_userlist.Get(x)->priv_flag;
           max_channels=g_config_maxch_user;
           break;
         }
@@ -268,21 +274,21 @@ static int ConfigOnToken(LineParser *lp)
     if (lp->getnumtokens() != 2) return -1;
     int p=lp->gettoken_int(1);
     m_group->m_max_users=p;
-  }  
+  }
   else if (!stricmp(t,"PIDFile"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_pidfilename.Set(lp->gettoken_str(1));    
+    g_pidfilename.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"LogFile"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_logfilename.Set(lp->gettoken_str(1));    
+    g_logfilename.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"SessionArchive"))
   {
     if (lp->getnumtokens() != 3) return -1;
-    g_config_logpath.Set(lp->gettoken_str(1));    
+    g_config_logpath.Set(lp->gettoken_str(1));
     g_config_log_sessionlen = lp->gettoken_int(2);
   }
   else if (!stricmp(t,"SetUID"))
@@ -308,12 +314,12 @@ static int ConfigOnToken(LineParser *lp)
   {
     if (lp->getnumtokens() != 2) return -1;
     if (!m_group->m_topictext.Get()[0])
-      m_group->m_topictext.Set(lp->gettoken_str(1));    
+      m_group->m_topictext.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"MaxChannels"))
   {
     if (lp->getnumtokens() != 2 && lp->getnumtokens() != 3) return -1;
-    
+
     g_config_maxch_user=lp->gettoken_int(1);
     g_config_maxch_anon=lp->gettoken_int(lp->getnumtokens()>2?2:1);
   }
@@ -338,11 +344,14 @@ static int ConfigOnToken(LineParser *lp)
   {
     if (lp->getnumtokens() != 2) return -1;
     FILE *fp=fopen(lp->gettoken_str(1),"rt");
-    if (!fp) 
+    if (!fp)
     {
       printf("Error opening license file %s\n",lp->gettoken_str(1));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       if (g_logfp)
         logText("Error opening license file %s\n",lp->gettoken_str(1));
+#pragma GCC diagnostic pop
       return -2;
     }
     g_config_license.Set("");
@@ -350,13 +359,16 @@ static int ConfigOnToken(LineParser *lp)
     {
       char buf[1024];
       buf[0]=0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
       fgets(buf,sizeof(buf),fp);
+#pragma GCC diagnostic pop
       if (!buf[0]) break;
       g_config_license.Append(buf);
     }
 
     fclose(fp);
-    
+
   }
   else if (!stricmp(t,"ACL"))
   {
@@ -386,8 +398,11 @@ static int ConfigOnToken(LineParser *lp)
 
     if (!suc)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       if (g_logfp)
         logText("Usage: ACL xx.xx.xx.xx/X [ban|allow|reserve]\n");
+#pragma GCC diagnostic pop
       printf("Usage: ACL xx.xx.xx.xx/X [ban|allow|reserve]\n");
       return -2;
     }
@@ -407,15 +422,18 @@ static int ConfigOnToken(LineParser *lp)
         else if (*ptr == 'T' || *ptr == 't') p->priv_flag |= PRIV_TOPIC;
         else if (*ptr == 'B' || *ptr == 'b') p->priv_flag |= PRIV_BPM;
         else if (*ptr == 'C' || *ptr == 'c') p->priv_flag |= PRIV_CHATSEND;
-        else if (*ptr == 'K' || *ptr == 'k') p->priv_flag |= PRIV_KICK;        
-        else if (*ptr == 'R' || *ptr == 'r') p->priv_flag |= PRIV_RESERVE;        
+        else if (*ptr == 'K' || *ptr == 'k') p->priv_flag |= PRIV_KICK;
+        else if (*ptr == 'R' || *ptr == 'r') p->priv_flag |= PRIV_RESERVE;
         else if (*ptr == 'M' || *ptr == 'm') p->priv_flag |= PRIV_ALLOWMULTI;
-        else if (*ptr == 'H' || *ptr == 'h') p->priv_flag |= PRIV_HIDDEN;       
-        else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;               
-        else 
+        else if (*ptr == 'H' || *ptr == 'h') p->priv_flag |= PRIV_HIDDEN;
+        else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;
+        else
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           if (g_logfp)
             logText("Warning: Unknown user priviledge flag '%c'\n",*ptr);
+#pragma GCC diagnostic pop
           printf("Warning: Unknown user priviledge flag '%c'\n",*ptr);
         }
         ptr++;
@@ -468,7 +486,7 @@ static int ConfigOnToken(LineParser *lp)
       return -2;
     }
     g_config_allowanonymous=!!x;
-  }  
+  }
   else if (!stricmp(t,"AnonymousUsersCanChat"))
   {
     if (lp->getnumtokens() != 2) return -1;
@@ -479,7 +497,7 @@ static int ConfigOnToken(LineParser *lp)
       return -2;
     }
     g_config_allow_anonchat=!!x;
-  }  
+  }
   else return -3;
   return 0;
 
@@ -491,12 +509,18 @@ static int ReadConfig(char *configfile)
   bool comment_state=0;
   int linecnt=0;
   WDL_String linebuild;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   if (g_logfp) logText("[config] reloading configuration file\n");
-  FILE *fp=strcmp(configfile,"-")?fopen(configfile,"rt"):stdin; 
+#pragma GCC diagnostic pop
+  FILE *fp=strcmp(configfile,"-")?fopen(configfile,"rt"):stdin;
   if (!fp)
   {
     printf("[config] error opening configfile '%s'\n",configfile);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     if (g_logfp) logText("[config] error opening config file (console request)\n");
+#pragma GCC diagnostic pop
     return -1;
   }
 
@@ -527,7 +551,10 @@ static int ReadConfig(char *configfile)
   {
     char buf[8192];
     buf[0]=0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
     fgets(buf,sizeof(buf),fp);
+#pragma GCC diagnostic pop
     linecnt++;
     if (!buf[0]) break;
     if (buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
@@ -548,14 +575,20 @@ static int ReadConfig(char *configfile)
 
     if (res)
     {
-      if (res==-2) 
+      if (res==-2)
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         if (g_logfp) logText("[config] warning: unterminated string parsing line %d of %s\n",linecnt,configfile);
+#pragma GCC diagnostic pop
         printf("[config] warning: unterminated string parsing line %d of %s\n",linecnt,configfile);
       }
-      else 
+      else
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         if (g_logfp) logText("[config] warning: error parsing line %d of %s\n",linecnt,configfile);
+#pragma GCC diagnostic pop
         printf("[config] warning: error parsing line %d of %s\n",linecnt,configfile);
       }
     }
@@ -570,17 +603,26 @@ static int ReadConfig(char *configfile)
         {
           if (err == -1)
           {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
             if (g_logfp) logText("[config] warning: wrong number of tokens on line %d of %s\n",linecnt,configfile);
+#pragma GCC diagnostic pop
             printf("[config] warning: wrong number of tokens on line %d of %s\n",linecnt,configfile);
           }
           if (err == -2)
           {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
             if (g_logfp) logText("[config] warning: invalid parameter on line %d of %s\n",linecnt,configfile);
+#pragma GCC diagnostic pop
             printf("[config] warning: invalid parameter on line %d of %s\n",linecnt,configfile);
           }
           if (err == -3)
           {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
             if (g_logfp) logText("[config] warning: invalid config command \"%s\" on line %d of %s\n",lp.gettoken_str(0),linecnt,configfile);
+#pragma GCC diagnostic pop
             printf("[config] warning: invalid config command \"%s\" on line %d of %s\n",lp.gettoken_str(0),linecnt,configfile);
           }
         }
@@ -588,7 +630,10 @@ static int ReadConfig(char *configfile)
     }
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   if (g_logfp) logText("[config] reload complete\n");
+#pragma GCC diagnostic pop
 
   if (fp != stdin) fclose(fp);
   return 0;
@@ -625,7 +670,10 @@ void enforceACL()
       killcnt++;
     }
   }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   if (killcnt) logText("killed %d users by enforcing ACL\n",killcnt);
+#pragma GCC diagnostic pop
 }
 
 
@@ -654,8 +702,10 @@ void openLog()
     if (!g_logfp)
       printf("Error opening log file '%s'\n",g_logfilename.Get());
     else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("Opened log. NINJAM Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
-
+#pragma GCC diagnostic pop
   }
 }
 
@@ -670,8 +720,8 @@ void closeLog()
 
 void logText(char *s, ...)
 {
-    if (g_logfp) 
-    {      
+    if (g_logfp)
+    {
       time_t tv;
       time(&tv);
       struct tm *t=localtime(&tv);
@@ -682,7 +732,7 @@ void logText(char *s, ...)
     va_list ap;
     va_start(ap,s);
 
-    vfprintf(g_logfp?g_logfp:stdout,s,ap);    
+    vfprintf(g_logfp?g_logfp:stdout,s,ap);
 
     if (g_logfp) fflush(g_logfp);
 
@@ -773,22 +823,34 @@ int main(int argc, char **argv)
 
   openLog();
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   logText("Server starting up...\n");
+#pragma GCC diagnostic pop
 
   JNL::open_socketlib();
 
   {
-    logText("Port: %d\n",g_config_port);    
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+    logText("Port: %d\n",g_config_port);
+#pragma GCC diagnostic pop
     m_listener = new JNL_Listen(g_config_port);
-    if (m_listener->is_error()) 
+    if (m_listener->is_error())
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("Error listening on port %d!\n",g_config_port);
+#pragma GCC diagnostic pop
     }
 
     m_group->CreateUserLookup=myCreateUserLookup;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     logText("Using defaults %d BPM %d BPI\n",g_default_bpm,g_default_bpi);
-    m_group->SetConfig(g_default_bpi,g_default_bpm);    
+#pragma GCC diagnostic pop
+    m_group->SetConfig(g_default_bpi,g_default_bpm);
 
     m_group->SetLicenseText(g_config_license.Get());
 
@@ -799,16 +861,22 @@ int main(int argc, char **argv)
     while (!g_done)
     {
       JNL_Connection *con=m_listener->get_connect(2*65536,65536);
-      if (con) 
+      if (con)
       {
         char str[512];
         int flag=aclGet(con->get_remote());
         JNL::addr_to_ipstr(con->get_remote(),str,sizeof(str));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         logText("Incoming connection from %s!\n",str);
+#pragma GCC diagnostic pop
 
         if (flag == ACL_FLAG_DENY)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           logText("Denying connection (via ACL)\n");
+#pragma GCC diagnostic pop
           delete con;
         }
         else
@@ -817,7 +885,7 @@ int main(int argc, char **argv)
         }
       }
 
-      if (m_group->Run()) 
+      if (m_group->Run())
       {
 #ifdef _WIN32
         if (needprompt)
@@ -854,7 +922,10 @@ int main(int argc, char **argv)
           {
             printf("(be quick, server is paused while you type!!!)\nKill username: ");
             char buf[512];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
             fgets(buf,sizeof(buf),stdin);
+#pragma GCC diagnostic pop
             if (buf[0] && buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
             if (buf[0])
             {
@@ -896,19 +967,22 @@ int main(int argc, char **argv)
           {
             if (!strcmp(argv[1],"-") || ReadConfig(argv[1]))
             {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
               if (g_logfp) logText("Error opening config file\n");
+#pragma GCC diagnostic pop
               printf("Error opening config file!\n");
             }
             else
             {
-//              printf("Listening on port %d...",g_config_port);    
+//              printf("Listening on port %d...",g_config_port);
 
               onConfigChange(argc,argv);
             }
             needprompt=1;
           }
           else needprompt=2;
-         
+
 
         }
         Sleep(1);
@@ -932,17 +1006,17 @@ int main(int argc, char **argv)
         {
           m_group->SetLogDir(NULL);
 
-          int len=30; // check every 30 seconds if we aren't logging       
+          int len=30; // check every 30 seconds if we aren't logging
 
           if (g_config_logpath.Get()[0])
           {
             int x;
             for (x = 0; x < m_group->m_users.GetSize() && m_group->m_users.Get(x)->m_auth_state < 1; x ++);
-           
+
             if (x < m_group->m_users.GetSize())
             {
               WDL_String tmp;
-    
+
               int cnt=0;
               while (cnt < 16)
               {
@@ -964,15 +1038,21 @@ int main(int argc, char **argv)
 
                 cnt++;
               }
-    
+
               if (cnt < 16 )
               {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
                 logText("Archiving session '%s'\n",tmp.Get());
+#pragma GCC diagnostic pop
                 m_group->SetLogDir(tmp.Get());
               }
               else
               {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
                 logText("Error creating a session archive directory! Gave up after '%s' failed!\n",tmp.Get());
+#pragma GCC diagnostic pop
               }
               // if we succeded, don't check until configured time
               len=g_config_log_sessionlen*60;
@@ -987,7 +1067,10 @@ int main(int argc, char **argv)
     }
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   logText("Shutting down server\n");
+#pragma GCC diagnostic pop
 
   delete m_group;
   delete m_listener;
@@ -1001,7 +1084,10 @@ int main(int argc, char **argv)
 
 void onConfigChange(int argc, char **argv)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   logText("reloading config...\n");
+#pragma GCC diagnostic pop
 
   //m_group->SetConfig(g_config_bpi,g_config_bpm);
   enforceACL();

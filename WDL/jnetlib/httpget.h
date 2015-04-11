@@ -8,7 +8,7 @@
 ** Usage:
 **   1. Create a JNL_HTTPGet object, optionally specifying a JNL_AsyncDNS
 **      object to use (or NULL for none, or JNL_CONNECTION_AUTODNS for auto),
-**      and the receive buffer size, and a string specifying proxy (or NULL 
+**      and the receive buffer size, and a string specifying proxy (or NULL
 **      for none). See note on proxy string below.
 **   2. call addheader() to add whatever headers you want. It is recommended to
 **      add at least the following two:
@@ -16,12 +16,12 @@
 *///      addheader("Accept:*/*");
 /*         ( the comment weirdness is there so I Can do the star-slash :)
 **   3. Call connect() with the URL you wish to GET (see URL string note below)
-**   4. Call run() once in a while, checking to see if it returns -1 
+**   4. Call run() once in a while, checking to see if it returns -1
 **      (if it does return -1, call geterrorstr() to see what the error is).
 **      (if it returns 1, no big deal, the connection has closed).
 **   5. While you're at it, you can call bytes_available() to see if any data
 **      from the http stream is available, or getheader() to see if any headers
-**      are available, or getreply() to see the HTTP reply, or getallheaders() 
+**      are available, or getreply() to see the HTTP reply, or getallheaders()
 **      to get a double null terminated, null delimited list of headers returned.
 **   6. If you want to read from the stream, call get_bytes (which returns how much
 **      was actually read).
@@ -30,7 +30,7 @@
 **   8. Delete ye' ol' object when done.
 **
 ** Proxy String:
-**   should be in the format of host:port, or user@host:port, or 
+**   should be in the format of host:port, or user@host:port, or
 **   user:password@host:port. if port is not specified, 80 is assumed.
 ** URL String:
 **   should be in the format of http://user:pass@host:port/requestwhatever
@@ -56,7 +56,7 @@ class JNL_HTTPGet
 
     int run(); // returns: 0 if all is OK. -1 if error (call geterrorstr()). 1 if connection closed.
 
-    int   get_status(); // returns 0 if connecting, 1 if reading headers, 
+    int   get_status(); // returns 0 if connecting, 1 if reading headers,
                         // 2 if reading content, -1 if error.
 
     char *getallheaders(); // double null terminated, null delimited list
@@ -70,7 +70,10 @@ class JNL_HTTPGet
     int get_bytes(char *buf, int len);
     int peek_bytes(char *buf, int len);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     int content_length() { char *p=getheader("content-length"); if (p) return atoi(p); return 0; }
+#pragma GCC diagnostic pop
 
     JNL_Connection *get_con() { return m_con; }
 

@@ -2,9 +2,9 @@
     WDL - string.h
     Copyright (C) 2005 Cockos Incorporated
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
+    WDL is dual-licensed. You may modify and/or distribute WDL under either of
     the following  licenses:
-    
+
       This software is provided 'as-is', without any express or implied
       warranty.  In no event will the authors be held liable for any damages
       arising from the use of this software.
@@ -20,7 +20,7 @@
       2. Altered source versions must be plainly marked as such, and must not be
          misrepresented as being the original software.
       3. This notice may not be removed or altered from any source distribution.
-      
+
 
     or:
 
@@ -44,7 +44,7 @@
   This file provides a simple class for variable-length string manipulation.
   It provides only the simplest features, and does not do anything confusing like
   operator overloading. It uses a WDL_HeapBuf for internal storage.
- 
+
 */
 
 #ifndef _WDL_STRING_H_
@@ -71,14 +71,14 @@ public:
   ~WDL_String()
   {
   }
-#define WDL_STRING_PREFIX 
+#define WDL_STRING_PREFIX
 #else
 #define WDL_STRING_PREFIX WDL_String::
 #endif
 
   void WDL_STRING_PREFIX Set(const char *str, int maxlen
 #ifdef WDL_STRING_INTF_ONLY
-      =0); 
+      =0);
 #else
 #ifdef WDL_STRING_IMPL_ONLY
     )
@@ -87,10 +87,10 @@ public:
 #endif
   {
     int s=strlen(str);
-    if (maxlen && s > maxlen) s=maxlen;   
+    if (maxlen && s > maxlen) s=maxlen;
 
     char *newbuf=(char*)m_hb.Resize(s+1);
-    if (newbuf) 
+    if (newbuf)
     {
       memcpy(newbuf,str,s);
       newbuf[s]=0;
@@ -100,7 +100,7 @@ public:
 
   void WDL_STRING_PREFIX Append(const char *str, int maxlen
 #ifdef WDL_STRING_INTF_ONLY
-      =0); 
+      =0);
 #else
 #ifdef WDL_STRING_IMPL_ONLY
     )
@@ -139,7 +139,7 @@ public:
 
   void WDL_STRING_PREFIX Insert(const char *str, int position, int maxlen
 #ifdef WDL_STRING_INTF_ONLY
-      =0); 
+      =0);
 #else
 #ifdef WDL_STRING_IMPL_ONLY
     )
@@ -164,7 +164,7 @@ public:
 
   void WDL_STRING_PREFIX SetLen(int length) // sets number of chars allocated for string, not including null terminator
 #ifdef WDL_STRING_INTF_ONLY
-    ; 
+    ;
 #else
   {                       // can use to resize down, too, or resize up for a sprintf() etc
     char *b=(char*)m_hb.Resize(length+1);
@@ -176,7 +176,10 @@ public:
   char *Get()
   {
     if (m_hb.Get()) return (char *)m_hb.Get();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     return "";
+#pragma GCC diagnostic pop
   }
 
   private:

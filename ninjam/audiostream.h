@@ -18,21 +18,19 @@
 */
 
 /*
-
   This header is used by NINJAM clients to define an abstract audio streamer interface,
-  as well as declare functions for creating instances of these audio streamers.
+  as well as declare functions for creating instances of these audio streamers
+  and some utility methods for querying hardware devices before instantiation.
 
-  On the legacy Win32 client, these functions are primarily called from audioconfig.cpp,
-  and on the legacy Cocoa client the function is called from Controller.mm.
-  Clients targeting other platforms would call these directly.
-
-  The basic structure is:
-    The client runs, creates an audioStreamer (below), giving it a SPLPROC,
-    which is a client owned function that then in turn calls NJClient::AudioProc.
-
-  But this is just the interface declaration etc.
-
+  The instantiation/runtime protocol is such:
+    The client application instantiates aNJClient and then anAudioStreamer,
+        passing an SPLPROC (typedef below) into the AudioStreamer "constructor"
+        (and in some cases aNJClient as well).
+    The SPLPROC is a client defined callback that is to be called periodically
+        by the libninjam audio thread, giving the client the opportunity to modify
+        the input and output samples, which are then passed back to aNJClient->AudioProc().
 */
+
 
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
@@ -53,11 +51,10 @@
 #ifdef _WIN32
 #  ifndef NO_SUPPORT_DS
 #    include <dsound.h>
-#    include <string>
 #    include <vector>
 struct DsDevice
 {
-  GUID guid              ;
+  GUID        deviceGuid ;
   std::string deviceName ;
   std::string driverName ;
 } ;
@@ -82,64 +79,67 @@ public:
   enum MacApi { MAC_AUDIO_CA } ;
   enum NixApi { NIX_AUDIO_JACK , NIX_AUDIO_ALSA } ;
 
-  static const int   DEFAULT_N_INPUTS    = 2 ;
-  static const int   DEFAULT_N_OUTPUTS   = 2 ;
-  static const int   DEFAULT_SAMPLE_RATE = 44100 ;
-  static const int   DEFAULT_BIT_DEPTH   = 16 ;
+  static const int         DEFAULT_N_INPUTS    = 2 ;
+  static const int         DEFAULT_N_OUTPUTS   = 2 ;
+  static const int         DEFAULT_SAMPLE_RATE = 44100 ;
+  static const int         DEFAULT_BIT_DEPTH   = 16 ;
 #ifdef _WIN32
 #  ifndef NO_SUPPORT_ASIO
-  static const int   DEFAULT_ASIO_DRIVER_N  = 0 ;
-  static const int   DEFAULT_ASIO_INPUTB_N  = 0 ;
-  static const int   DEFAULT_ASIO_INPUTE_N  = 1 ;
-  static const int   DEFAULT_ASIO_OUTPUTB_N = 0 ;
-  static const int   DEFAULT_ASIO_OUTPUTE_N = 1 ;
-  static const bool  DEFAULT_ASIO_CONTROL   = FALSE ;
+  static const int         DEFAULT_ASIO_DRIVER_N  = 0 ;
+  static const int         DEFAULT_ASIO_INPUTB_N  = 0 ;
+  static const int         DEFAULT_ASIO_INPUTE_N  = 1 ;
+  static const int         DEFAULT_ASIO_OUTPUTB_N = 0 ;
+  static const int         DEFAULT_ASIO_OUTPUTE_N = 1 ;
+  static const bool        DEFAULT_ASIO_CONTROL   = FALSE ;
 #  endif // NO_SUPPORT_ASIO
 #  ifndef NO_SUPPORT_KS
-  static const int   DEFAULT_KS_N_BLOCKS   = 8 ;
-  static const int   DEFAULT_KS_BLOCK_SIZE = 512 ;
+  static const int         DEFAULT_KS_N_BLOCKS   = 8 ;
+  static const int         DEFAULT_KS_BLOCK_SIZE = 512 ;
 #  endif // NO_SUPPORT_KS
 #  ifndef NO_SUPPORT_DS
-  static const char* DEFAULT_DS_DEVICE_NAME ;
-  static const int   DEFAULT_DS_N_BLOCKS   = 16 ;
-  static const int   DEFAULT_DS_BLOCK_SIZE = 1024 ;
+  static const std::string DEFAULT_DS_DEVICE_NAME ;
+  static const int         DEFAULT_DS_N_BLOCKS   = 16 ;
+  static const int         DEFAULT_DS_BLOCK_SIZE = 1024 ;
 #  endif // NO_SUPPORT_DS
 #  ifndef NO_SUPPORT_WAVE
-  static const int   DEFAULT_WAVE_INPUT_N    = -1 ;
-  static const int   DEFAULT_WAVE_OUTPUT_N   = -1 ;
-  static const int   DEFAULT_WAVE_N_BLOCKS   = 8 ;
-  static const int   DEFAULT_WAVE_BLOCK_SIZE = 4096 ;
+  static const int         DEFAULT_WAVE_INPUT_N    = -1 ;
+  static const int         DEFAULT_WAVE_OUTPUT_N   = -1 ;
+  static const int         DEFAULT_WAVE_N_BLOCKS   = 8 ;
+  static const int         DEFAULT_WAVE_BLOCK_SIZE = 4096 ;
 #  endif // NO_SUPPORT_WAVE
 #else // _WIN32
 #  ifdef _MAC
-  static const char* DEFAULT_CA_DEVICES ;
-/* TODO: implement this
-  static const char* DEFAULT_CA_DEVICES = "" ;
-*/
+  static const std::string DEFAULT_CA_INPUT_NAME ;
+  static const std::string DEFAULT_CA_OUTPUT_NAME ;
+  static const char*       CA_ARGS_FMT ;
 #  else // _MAC
 #    ifndef NO_SUPPORT_JACK
-  static const char* DEFAULT_JACK_NAME ;
-  static const char* DEFAULT_ALSA_INPUT ;
-  static const char* DEFAULT_ALSA_OUTPUT ;
-/* TODO: implement this
-  static const char* DEFAULT_JACK_NAME      = "NINJAM" ;
-  static const char* DEFAULT_ALSA_INPUT     = "hw:0,0" ;
-  static const char* DEFAULT_ALSA_OUTPUT    = "hw:0,0" ;
-*/
+  static const std::string DEFAULT_JACK_NAME ;
 #    endif // NO_SUPPORT_JACK
 #    ifndef NO_SUPPORT_ALSA
-  static const int   DEFAULT_ALSA_N_BLOCKS   = 16 ;
-  static const int   DEFAULT_ALSA_BLOCK_SIZE = 1024 ;
+  static const std::string DEFAULT_ALSA_INPUT_NAME ;
+  static const std::string DEFAULT_ALSA_OUTPUT_NAME ;
+  static const int         DEFAULT_ALSA_N_BLOCKS   = 16 ;
+  static const int         DEFAULT_ALSA_BLOCK_SIZE = 1024 ;
 #    endif // NO_SUPPORT_ALSA
 #  endif // _MAC
 #endif // _WIN32
+
+
+  /* audioStreamer public class variables */
+
+#ifdef _MAC
+  // TODO: this should not be public (nor static)
+  //           but is currently called from a naked C function
+  static SPLPROC OnSamples ;
+#endif // _MAC
 
 
   /* audioStreamer public constructors */
 
 #ifdef _WIN32
 #  ifndef NO_SUPPORT_ASIO
-  static audioStreamer* NewASIO(SPLPROC on_samples_proc                              ,
+  static audioStreamer* NewASIO(SPLPROC on_samples_cb                                ,
                                 int     asio_driver_n       = DEFAULT_ASIO_DRIVER_N  ,
                                 int     input_channel_b_n   = DEFAULT_ASIO_INPUTB_N  ,
                                 int     input_channel_e_n   = DEFAULT_ASIO_INPUTE_N  ,
@@ -148,13 +148,13 @@ public:
                                 bool    should_show_asio_cp = DEFAULT_ASIO_CONTROL   ) ;
 #  endif // NO_SUPPORT_ASIO
 #  ifndef NO_SUPPORT_KS
-  static audioStreamer* NewKS(  SPLPROC on_samples_proc) ;
-  static audioStreamer* NewKS(  SPLPROC on_samples_proc                   ,
+  static audioStreamer* NewKS(  SPLPROC on_samples_cb) ;
+  static audioStreamer* NewKS(  SPLPROC on_samples_cb                     ,
                                 int     sample_rate     , int  bit_depth  ,
                                 int*    n_buffers       , int* buffer_size) ;
 #  endif // NO_SUPPORT_KS
 #  ifndef NO_SUPPORT_DS
-  static audioStreamer* NewDS(  SPLPROC on_samples_proc                           ,
+  static audioStreamer* NewDS(  SPLPROC on_samples_cb                             ,
                                 GUID    input_device_guid  = GUID_NULL            ,
                                 GUID    output_device_guid = GUID_NULL            ,
                                 int     sample_rate        = DEFAULT_SAMPLE_RATE  ,
@@ -163,7 +163,7 @@ public:
                                 int     buffer_size        = DEFAULT_DS_BLOCK_SIZE) ;
 #  endif // NO_SUPPORT_DS
 #  ifndef NO_SUPPORT_WAVE
-  static audioStreamer* NewWAVE(SPLPROC on_samples_proc                          ,
+  static audioStreamer* NewWAVE(SPLPROC on_samples_cb                            ,
                                 int     input_device_n  = DEFAULT_WAVE_INPUT_N   ,
                                 int     output_device_n = DEFAULT_WAVE_OUTPUT_N  ,
                                 int     sample_rate     = DEFAULT_SAMPLE_RATE    ,
@@ -173,31 +173,29 @@ public:
 #  endif // NO_SUPPORT_WAVE
 #else // _WIN32
 #  ifdef _MAC
-// TODO: implement this
-  static audioStreamer* NewCA(  SPLPROC on_samples_proc                      ,
-                                char**  audio_devices = DEFAULT_MAC_DEVICES  ,
-                                int     n_channels    = DEFAULT_N_INPUTS     ,
-                                int     sample_rate   = DEFAULT_SAMPLE_RATE  ,
-                                int     bit_depth     = DEFAULT_BIT_DEPTH    ) ;
+  static audioStreamer* NewCA(  SPLPROC     on_samples_cb                          ,
+                                std::string input_device  = DEFAULT_CA_INPUT_NAME  ,
+                                std::string output_device = DEFAULT_CA_OUTPUT_NAME ,
+                                int         n_channels    = DEFAULT_N_INPUTS       ,
+                                int         sample_rate   = DEFAULT_SAMPLE_RATE    ,
+                                int         bit_depth     = DEFAULT_BIT_DEPTH      ) ;
 #  else // _MAC
 #    ifndef NO_SUPPORT_JACK
-// TODO: implement this
-  static audioStreamer* NewJACK(SPLPROC     on_samples_proc                        ,
+  static audioStreamer* NewJACK(SPLPROC     on_samples_cb                          ,
                                 NJClient*   a_NJClient                             ,
-                                const char* jack_client_name  = DEFAULT_JACK_NAME  ,
+                                std::string jack_client_name  = DEFAULT_JACK_NAME  ,
                                 int         n_input_channels  = DEFAULT_N_INPUTS   ,
                                 int         n_output_channels = DEFAULT_N_OUTPUTS  ) ;
 #    endif // NO_SUPPORT_JACK
 #    ifndef NO_SUPPORT_ALSA
-// TODO: implement this
-  static audioStreamer* NewALSA(SPLPROC     on_samples_proc                        ,
-                                const char* input_device  = DEFAULT_ALSA_INPUT     ,
-                                const char* output_device = DEFAULT_ALSA_OUTPUT    ,
-                                int         n_channels    = DEFAULT_N_INPUTS       ,
-                                int         sample_rate   = DEFAULT_SAMPLE_RATE    ,
-                                int         bit_depth     = DEFAULT_BIT_DEPTH      ,
-                                int         n_buffers     = DEFAULT_ALSA_N_BLOCKS  ,
-                                int         buffer_size   = DEFAULT_ALSA_BLOCK_SIZE) ;
+  static audioStreamer* NewALSA(SPLPROC     on_samples_cb                            ,
+                                std::string input_device  = DEFAULT_ALSA_INPUT_NAME  ,
+                                std::string output_device = DEFAULT_ALSA_OUTPUT_NAME ,
+                                int         n_channels    = DEFAULT_N_INPUTS         ,
+                                int         sample_rate   = DEFAULT_SAMPLE_RATE      ,
+                                int         bit_depth     = DEFAULT_BIT_DEPTH        ,
+                                int         n_buffers     = DEFAULT_ALSA_N_BLOCKS    ,
+                                int         buffer_size   = DEFAULT_ALSA_BLOCK_SIZE  ) ;
 #    endif // NO_SUPPORT_ALSA
 #  endif // _MAC
 #endif // _WIN32
@@ -256,7 +254,7 @@ private:
 
 #ifdef _WIN32
 #  ifndef NO_SUPPORT_ASIO
-  static audioStreamer* (*CreateASIO)(char** cli_args , SPLPROC on_samples_proc) ;
+  static audioStreamer* (*CreateASIO)(char** cli_args , SPLPROC on_samples_cb) ;
   static bool           LoadNjasiodrvDll() ;
 #  endif // NO_SUPPORT_ASIO
 #  ifndef NO_SUPPORT_DS
@@ -314,9 +312,9 @@ protected:
 audioStreamer* create_audioStreamer_JACK(const char* jack_client_name  ,
                                          int         n_input_channels  ,
                                          int         n_output_channels ,
-                                         SPLPROC     on_samples_proc   ,
+                                         SPLPROC     on_samples_cb     ,
                                          NJClient*   a_NJClient        ) ;
-audioStreamer* create_audioStreamer_ALSA(char* cli_args , SPLPROC on_samples_proc) ;
+audioStreamer* create_audioStreamer_ALSA(char* cli_args , SPLPROC on_samples_cb) ;
 #  endif // _MAC
 #endif // _WIN32
 

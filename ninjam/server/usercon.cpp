@@ -59,7 +59,7 @@ static int is_type_char_valid(int c)
   return (c >= 'a' && c <= 'z') ||
          (c >= 'A' && c <= 'Z') ||
          (c >= '0' && c <= '9') ||
-         c == ' ' || c == '-' || 
+         c == ' ' || c == '-' ||
          c == '.' || c == '_';
 }
 
@@ -132,7 +132,10 @@ void User_Connection::Send(Net_Message *msg)
 {
   if (m_netcon.Send(msg))
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     logText("Error sending message to user '%s', type %d, queue full!\n",m_username.Get(),msg->get_type());
+#pragma GCC diagnostic pop
   }
 }
 
@@ -170,7 +173,7 @@ int User_Connection::OnRunAuth(User_Group *group)
 {
   char addrbuf[256];
   JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
- 
+
   {
     WDL_SHA1 shatmp;
 
@@ -183,9 +186,15 @@ int User_Connection::OnRunAuth(User_Group *group)
 
     if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("%s: Refusing user, invalid login/password\n",addrbuf);
+#pragma GCC diagnostic pop
       mpb_server_auth_reply bh;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       bh.errmsg="invalid login/password";
+#pragma GCC diagnostic pop
       Send(bh.build());
       return 0;
     }
@@ -280,7 +289,7 @@ int User_Connection::OnRunAuth(User_Group *group)
         }
       }
       user++;
-    }   
+    }
   }
 
 
@@ -296,18 +305,26 @@ int User_Connection::OnRunAuth(User_Group *group)
     }
     if (cnt >= group->m_max_users)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("%s: Refusing user %s, server full\n",addrbuf,m_username.Get());
+#pragma GCC diagnostic pop
       // sorry, gotta kill this connection
       mpb_server_auth_reply bh;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       bh.errmsg="server full";
+#pragma GCC diagnostic pop
       Send(bh.build());
       return 0;
     }
   }
 
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
   logText("%s: Accepted user: %s\n",addrbuf,m_username.Get());
+#pragma GCC diagnostic pop
 
   {
     mpb_server_auth_reply bh;
@@ -357,7 +374,7 @@ void User_Connection::SendUserList(User_Group *group)
   {
     User_Connection *u=group->m_users.Get(user);
     int channel;
-    if (u && u->m_auth_state>0 && u != this) 
+    if (u && u->m_auth_state>0 && u != this)
     {
       int acnt=0;
       for (channel = 0; channel < u->m_max_channels && channel < MAX_USER_CHANNELS; channel ++)
@@ -371,10 +388,13 @@ void User_Connection::SendUserList(User_Group *group)
       }
       if (!acnt && !group->m_allow_hidden_users && u->m_max_channels && !(u->m_auth_privs & PRIV_HIDDEN)) // give users at least one channel
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           bh.build_add_rec(1,0,0,0,0,u->m_username.Get(),"");
+#pragma GCC diagnostic pop
       }
     }
-  }       
+  }
   Send(bh.build());
 }
 
@@ -382,7 +402,7 @@ void User_Connection::SendUserList(User_Group *group)
 int User_Connection::Run(User_Group *group, int *wantsleep)
 {
   Net_Message *msg=m_netcon.Run(wantsleep);
-  if (m_netcon.GetStatus()) 
+  if (m_netcon.GetStatus())
   {
     delete msg;
     return m_netcon.GetStatus();
@@ -410,10 +430,16 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
       {
         char buf[256];
         JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),buf,sizeof(buf));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         logText("%s: Got an authorization timeout\n",buf);
+#pragma GCC diagnostic pop
         m_connect_time=time(NULL)+120;
         mpb_server_auth_reply bh;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
         bh.errmsg="authorization timeout";
+#pragma GCC diagnostic pop
         Send(bh.build());
         m_netcon.Run();
 
@@ -436,14 +462,20 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
     if (err_st)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       static char *tab[] = { "invalid authorization reply", "incorrect client version", "license not agreed to" };
+#pragma GCC diagnostic pop
       mpb_server_auth_reply bh;
       bh.errmsg=tab[err_st-1];
 
       char addrbuf[256];
       JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
       logText("%s: Refusing user, %s\n",addrbuf,bh.errmsg);
+#pragma GCC diagnostic pop
 
       Send(bh.build());
       m_netcon.Run();
@@ -470,12 +502,12 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
     }
 
     m_auth_state=-1;
-    
+
 
   } // !m_auth_state
 
 
-  if (m_auth_state > 0) 
+  if (m_auth_state > 0)
   {
     switch (msg->get_type())
     {
@@ -488,7 +520,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
             mpb_server_userinfo_change_notify mfmt;
             int mfmt_changes=0;
-          
+
             int offs=0;
             short v;
             int p,f;
@@ -496,7 +528,10 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
             char *chnp=0;
             while ((offs=chi.parse_get_rec(offs,&chnp,&v,&p,&f))>0 && whichch < MAX_USER_CHANNELS && whichch < m_max_channels)
             {
-              if (!chnp) chnp=""; 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+              if (!chnp) chnp="";
+#pragma GCC diagnostic pop
 
               int doactive=!(f&0x80);
 
@@ -551,14 +586,17 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
               if (whichch == MAX_USER_CHANNELS) // if empty, tell the user about one channel
               {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
                 mfmt.build_add_rec(1,0,0,0,0,m_username.Get(),"");
+#pragma GCC diagnostic pop
                 mfmt_changes++;
               }
             }
 
 
             if (mfmt_changes) group->Broadcast(mfmt.build(),this);
-          }         
+          }
         }
       break;
       case MESSAGE_CLIENT_SET_USERMASK:
@@ -618,7 +656,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
             Net_Message *newmsg=nmb.build();
             newmsg->addRef();
-                    
+
             static unsigned char zero_guid[16];
 
 
@@ -639,7 +677,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
                 type_to_string(mp.fourcc,ext);
                 sprintf(fn,"%c/%s.%s",guidstr[0],guidstr,ext);
 
-                WDL_String tmp(group->m_logdir.Get());                
+                WDL_String tmp(group->m_logdir.Get());
                 tmp.Append(fn);
 
                 newrecv->fp = fopen(tmp.Get(),"wb");
@@ -647,12 +685,15 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
                 if (group->m_logfp)
                 {
                   // decide when to write new interval
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
                   char *chn="?";
+#pragma GCC diagnostic pop
                   if (mp.chidx >= 0 && mp.chidx < MAX_USER_CHANNELS) chn=m_channels[mp.chidx].name.Get();
                   fprintf(group->m_logfp,"user %s \"%s\" %d \"%s\"\n",guidstr,myusername,mp.chidx,chn);
                 }
               }
-            
+
               m_recvfiles.Add(newrecv);
             }
 
@@ -785,7 +826,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 }
 
 
-User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), 
+User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0),
   m_voting_threshold(110), m_voting_timeout(120),
   m_loopcnt(0), m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
 {
@@ -879,7 +920,7 @@ int User_Group::Run()
 #else
     struct timeval now;
     gettimeofday(&now,NULL);
-    if (now.tv_sec > m_next_loop_time.tv_sec || 
+    if (now.tv_sec > m_next_loop_time.tv_sec ||
         (now.tv_sec == m_next_loop_time.tv_sec && now.tv_usec >= m_next_loop_time.tv_usec))
     {
       int len_ms = ((60*1000*m_last_bpi) / (m_last_bpm?m_last_bpm:120));
@@ -895,7 +936,7 @@ int User_Group::Run()
 #endif
 
       m_loopcnt++;
-      if (m_logfp) 
+      if (m_logfp)
       {
         fprintf(m_logfp,"interval %d %d %d\n",m_loopcnt,m_last_bpm,m_last_bpi);
         fflush(m_logfp);
@@ -913,7 +954,7 @@ int User_Group::Run()
         if (ret)
         {
           // broadcast to other users that this user is no longer present
-          if (p->m_auth_state>0) 
+          if (p->m_auth_state>0)
           {
             mpb_chat_message newmsg;
             newmsg.parms[0]="PART";
@@ -948,7 +989,10 @@ int User_Group::Run()
 
           char addrbuf[256];
           JNL::addr_to_ipstr(p->m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
           logText("%s: disconnected (username:'%s', code=%d)\n",addrbuf,p->m_auth_state>0?p->m_username.Get():"",ret);
+#pragma GCC diagnostic pop
 
           delete p;
           m_users.Delete(thispos);
@@ -1114,7 +1158,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
           }
         }
       }
-     
+
 
     }
 
@@ -1179,7 +1223,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
 
       // send a privmsg back to sender, saying shit aint there
       WDL_String buf("No such user: ");
-      buf.Append(msg->parms[1]);          
+      buf.Append(msg->parms[1]);
       mpb_chat_message newmsg;
       newmsg.parms[0]="MSG";
       newmsg.parms[1]="";
@@ -1189,7 +1233,10 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
   }
   else if (!strcmp(msg->parms[0],"ADMIN")) // admin message
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
     char *adminerr="ADMIN requires valid parameter, i.e. topic, kick, bpm, bpi";
+#pragma GCC diagnostic pop
     if (msg->parms[1] && *msg->parms[1])
     {
       if (!strncasecmp(msg->parms[1],"topic ",6))
