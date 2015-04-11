@@ -1,3 +1,45 @@
+ninjam (0.06+svn121-0ubuntu0~quantal2) quantal; urgency=low
+
+  * Quantal build
+
+ -- falkTX <falktx@gmail.com>  Thu, 18 Oct 2012 03:34:50 +0100
+
+ninjam (0.06+svn121-0ubuntu0~precise2) precise; urgency=low
+
+  * Precise build
+
+ -- falkTX <falktx@gmail.com>  Wed, 24 Aug 2011 17:26:06 +0100
+
+ninjam (0.06+svn121-0ubuntu0~lucid1) lucid; urgency=low
+
+  * Upload to KXStudio Team PPA
+
+ -- falkTX <falktx@gmail.com>  Thu, 28 Apr 2011 15:37:00 +0100
+
+ninjam (0.06+svn121-0~ppa4) lucid; urgency=low
+
+  * Moved to Lucid Main
+
+ -- falkTX <falktx@gmail.com>  Mon, 28 Jun 2010 16:25:34 +0100
+
+ninjam (0.06+svn121-0~ppa3) lucid; urgency=low
+
+  * fixed again
+
+ -- falkTX <falktx@gmail.com>  Tue, 18 May 2010 21:52:40 +0100
+
+ninjam (0.06+svn121-0~ppa2) lucid; urgency=low
+
+  * fixed upload
+
+ -- falkTX <falktx@gmail.com>  Tue, 18 May 2010 21:40:17 +0100
+
+ninjam (0.06+svn121-0~ppa1) lucid; urgency=low
+
+  * Upload to Lucid
+
+ -- falkTX <falktx@gmail.com>  Tue, 18 May 2010 21:31:34 +0100
+
 ninjam (0.06-1ubuntu9) hardy; urgency=low
 
   * add conditional to Makefile to predict correct compile flags for 
