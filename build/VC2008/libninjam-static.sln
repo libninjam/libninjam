@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libninjam_static", "libninjam-static.vcproj", "{37240F1E-3652-4988-A0F3-38AAB7C630EE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ninjamserver", "ninjamserver.vcproj", "{31AF1FF4-3446-47D9-9AE0-52E34C152027}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{37240F1E-3652-4988-A0F3-38AAB7C630EE}.Debug|Win32.Build.0 = Debug|Win32
 		{37240F1E-3652-4988-A0F3-38AAB7C630EE}.Release|Win32.ActiveCfg = Release|Win32
 		{37240F1E-3652-4988-A0F3-38AAB7C630EE}.Release|Win32.Build.0 = Release|Win32
+		{31AF1FF4-3446-47D9-9AE0-52E34C152027}.Debug|Win32.ActiveCfg = Debug|Win32
+		{31AF1FF4-3446-47D9-9AE0-52E34C152027}.Debug|Win32.Build.0 = Debug|Win32
+		{31AF1FF4-3446-47D9-9AE0-52E34C152027}.Release|Win32.ActiveCfg = Release|Win32
+		{31AF1FF4-3446-47D9-9AE0-52E34C152027}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
