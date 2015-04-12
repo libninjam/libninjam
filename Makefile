@@ -28,14 +28,6 @@ endif
 
 # we MUST have -fomit-frame-pointer and -lm, otherwise we hate life
 #CFLAGS = $(OPTFLAGS) -s -Wall -Wextra -Isrc/
-
-
-
-
-
-
-
-
 CFLAGS = $(OPTFLAGS) -s -Isrc/
 # CFLAGS += -Wshadow
 CC=gcc
@@ -104,10 +96,9 @@ install: default
 	install -m 644 src/ninjam/*.h            $(INSTALLDIR)/include/libninjam/ninjam/
 	install -m 644 src/WDL/*.h               $(INSTALLDIR)/include/libninjam/WDL/
 	install -m 644 src/WDL/jnetlib/*.h       $(INSTALLDIR)/include/libninjam/WDL/jnetlib/
-	install        build/lib/*.so            $(INSTALLDIR)/lib/
-	install -m 755 build/lib/*.a             $(INSTALLDIR)/lib/
+	install -m 644 build/lib/*.so            $(INSTALLDIR)/lib/
+	install -m 644 build/lib/*.a             $(INSTALLDIR)/lib/
 	install -m 644 build/pc/ninjam.pc        $(INSTALLDIR)/lib/pkgconfig/
 	install -m 644 build/pc/ninjam-client.pc $(INSTALLDIR)/lib/pkgconfig/
 	$(MAKE) -C src/cursesclient install
 	$(MAKE) -C src/server       install
-

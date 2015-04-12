@@ -237,7 +237,7 @@ public:
   enum SubscribeMode    { SUBSCRIBE_NONE  , SUBSCRIBE_ALL  ,
                           SUBSCRIBE_ALLOW , SUBSCRIBE_DENY } ;
 
-  enum SaveMultitrack   { SAVE_TEMP = -1 , SAVE_NONE    = 0 ,
+  enum SaveMultitrack   { SAVE_TEMP = -1 , SAVE_NONE = 0 ,
                           SAVE_OGG       , SAVE_OGG_AND_WAV } ;
 
   enum SaveMixdown      { MIXDOWN_NONE , MIXDOWN_OGG         ,
