@@ -1,0 +1,6 @@
+language:       cpp
+compiler:       gcc
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libogg-dev libvorbis-dev libasound2-dev libjack-dev
+script:         make
