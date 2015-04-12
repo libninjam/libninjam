@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# temporary makefile - while this cliplogcvt project is still quite buggy
+
+
+g++ -O2 -malign-double -s -Wall -Wextra -I../ -o ../../build/cliplogcvt cliplogcvt.cpp -logg -lvorbis
