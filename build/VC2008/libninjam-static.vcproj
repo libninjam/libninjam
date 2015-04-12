@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../;../Include"
+				AdditionalIncludeDirectories="../../src;../Include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -107,7 +107,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../../;../Include"
+				AdditionalIncludeDirectories="../../src;../Include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -155,71 +155,47 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\..\ninjam\audiostream.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\constants.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\mpb.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\netmsg.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\njclient.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\njmisc.h"
-				>
-			</File>
 			<Filter
 				Name="KS"
 				>
 				<File
-					RelativePath="..\..\ninjam\KS\audfilter.h"
+					RelativePath="..\..\src\ninjam\KS\audfilter.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\audpin.h"
+					RelativePath="..\..\src\ninjam\KS\audpin.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\enum.h"
+					RelativePath="..\..\src\ninjam\KS\enum.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\filter.h"
+					RelativePath="..\..\src\ninjam\KS\filter.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\irptgt.h"
+					RelativePath="..\..\src\ninjam\KS\irptgt.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\kssample.h"
+					RelativePath="..\..\src\ninjam\KS\kssample.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\node.h"
+					RelativePath="..\..\src\ninjam\KS\node.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\pin.h"
+					RelativePath="..\..\src\ninjam\KS\pin.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\tlist.h"
+					RelativePath="..\..\src\ninjam\KS\tlist.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\util.h"
+					RelativePath="..\..\src\ninjam\KS\util.h"
 					>
 				</File>
 			</Filter>
@@ -227,89 +203,117 @@
 				Name="WDL"
 				>
 				<File
-					RelativePath="..\..\WDL\dirscan.h"
+					RelativePath="..\..\src\WDL\dirscan.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\heapbuf.h"
+					RelativePath="..\..\src\WDL\heapbuf.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\lineparse.h"
+					RelativePath="..\..\src\WDL\lineparse.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\mutex.h"
+					RelativePath="..\..\src\WDL\mutex.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\pcmfmtcvt.h"
+					RelativePath="..\..\src\WDL\pcmfmtcvt.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\ptrlist.h"
+					RelativePath="..\..\src\WDL\ptrlist.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\queue.h"
+					RelativePath="..\..\src\WDL\queue.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\rng.h"
+					RelativePath="..\..\src\WDL\rng.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\sha.h"
+					RelativePath="..\..\src\WDL\sha.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\string.h"
+					RelativePath="..\..\src\WDL\string.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\vorbisencdec.h"
+					RelativePath="..\..\src\WDL\vorbisencdec.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\wavwrite.h"
+					RelativePath="..\..\src\WDL\wavwrite.h"
 					>
 				</File>
 				<Filter
 					Name="jnetlib"
 					>
 					<File
-						RelativePath="..\..\WDL\jnetlib\asyncdns.h"
+						RelativePath="..\..\src\WDL\jnetlib\asyncdns.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\connection.h"
+						RelativePath="..\..\src\WDL\jnetlib\connection.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\httpget.h"
+						RelativePath="..\..\src\WDL\jnetlib\httpget.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\httpserv.h"
+						RelativePath="..\..\src\WDL\jnetlib\httpserv.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\jnetlib.h"
+						RelativePath="..\..\src\WDL\jnetlib\jnetlib.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\listen.h"
+						RelativePath="..\..\src\WDL\jnetlib\listen.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\netinc.h"
+						RelativePath="..\..\src\WDL\jnetlib\netinc.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\util.h"
+						RelativePath="..\..\src\WDL\jnetlib\util.h"
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="ninjam"
+				>
+				<File
+					RelativePath="..\..\src\ninjam\audiostream.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\constants.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\mpb.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\netmsg.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\njclient.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\njmisc.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -317,67 +321,39 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath="..\..\ninjam\audiostream_ks.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\audiostream_njasiodrv.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\audiostream_win32.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\mpb.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\netmsg.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\njclient.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\ninjam\njmisc.cpp"
-				>
-			</File>
 			<Filter
 				Name="KS"
 				>
 				<File
-					RelativePath="..\..\ninjam\KS\audfilter.cpp"
+					RelativePath="..\..\src\ninjam\KS\audfilter.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\audpin.cpp"
+					RelativePath="..\..\src\ninjam\KS\audpin.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\enum.cpp"
+					RelativePath="..\..\src\ninjam\KS\enum.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\filter.cpp"
+					RelativePath="..\..\src\ninjam\KS\filter.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\irptgt.cpp"
+					RelativePath="..\..\src\ninjam\KS\irptgt.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\node.cpp"
+					RelativePath="..\..\src\ninjam\KS\node.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\pin.cpp"
+					RelativePath="..\..\src\ninjam\KS\pin.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\ninjam\KS\util-ks.cpp"
+					RelativePath="..\..\src\ninjam\KS\util-ks.cpp"
 					>
 				</File>
 			</Filter>
@@ -385,41 +361,73 @@
 				Name="WDL"
 				>
 				<File
-					RelativePath="..\..\WDL\rng.cpp"
+					RelativePath="..\..\src\WDL\rng.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\WDL\sha.cpp"
+					RelativePath="..\..\src\WDL\sha.cpp"
 					>
 				</File>
 				<Filter
 					Name="jnetlib"
 					>
 					<File
-						RelativePath="..\..\WDL\jnetlib\asyncdns.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\asyncdns.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\connection.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\connection.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\httpget.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\httpget.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\httpserv.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\httpserv.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\listen.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\listen.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\WDL\jnetlib\util.cpp"
+						RelativePath="..\..\src\WDL\jnetlib\util.cpp"
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="ninjam"
+				>
+				<File
+					RelativePath="..\..\src\ninjam\audiostream_ks.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\audiostream_njasiodrv.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\audiostream_win32.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\mpb.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\netmsg.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\njclient.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ninjam\njmisc.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>
