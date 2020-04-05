@@ -331,7 +331,10 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 
     // FIXME: This will not work right, if there are slow-sync clients....
 
-    int diff = abs(current_frame % len) - (posi % len);
+    // FIXME: error: call of overloaded ‘abs(jack_nframes_t)’ is ambiguous
+    // int diff = abs(current_frame % len) - (posi % len);
+    // 'len' and 'posi' should be unsigned
+    int diff = (current_frame % abs(len)) - (abs(posi) % abs(len));
 
     if( diff > nframes ) {
 #if 1
