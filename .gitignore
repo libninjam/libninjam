@@ -1,1 +1,9 @@
 build/
+WDL/
+libninjam-client.a
+libninjam-client.so
+libninjam-common.a
+libninjam-common.so
+ninjam-client.pc
+ninjam.pc
+ninjam/
