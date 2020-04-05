@@ -331,7 +331,8 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
 
     // FIXME: This will not work right, if there are slow-sync clients....
 
-    int diff = abs(current_frame % len) - (posi % len);
+//    int diff = abs(current_frame % len) - (posi % len);
+    int diff = (current_frame % len) - (posi % len);
 
     if( diff > nframes ) {
 #if 1
