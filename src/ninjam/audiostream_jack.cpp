@@ -24,7 +24,7 @@
 |*|   * audioStreamer::NewJACK()
 \*/
 
-
+// #define JACK_TRANSPORT_SYNC
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -69,8 +69,9 @@ public:
 	    int nOutputChannels,
 	    SPLPROC proc);
   int process( jack_nframes_t nframes );
+#ifdef JACK_TRANSPORT_SYNC
   void timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos );
-
+#endif // JACK_TRANSPORT_SYNC
 
   const char *GetChannelName(int idx) {
     return GetInputChannelName(idx);
@@ -112,7 +113,7 @@ int
 process_cb( jack_nframes_t nframes, audioStreamer_JACK *as ) {
     return as->process( nframes );
 }
-
+#ifdef JACK_TRANSPORT_SYNC
 void jack_timebase_cb(jack_transport_state_t state,
 		      jack_nframes_t nframes,
 		      jack_position_t *pos,
@@ -121,7 +122,7 @@ void jack_timebase_cb(jack_transport_state_t state,
 {
     as->timebase_cb( state, nframes, pos, new_pos );
 }
-
+#endif // JACK_TRANSPORT_SYNC
 
 
 //////////////// JACK driver
@@ -170,8 +171,9 @@ bool audioStreamer_JACK::init(const char* clientName,
 #pragma GCC diagnostic pop
 
     jack_set_process_callback (client, (JackProcessCallback) process_cb, this);
-
+#ifdef JACK_TRANSPORT_SYNC
     jack_set_timebase_callback( client, 0, (JackTimebaseCallback) jack_timebase_cb, this );
+#endif // JACK_TRANSPORT_SYNC
 
     if (_out) {
       delete[] _out;
@@ -294,7 +296,7 @@ audioStreamer_JACK::process( jack_nframes_t nframes ) {
   return 0;
 }
 
-
+#ifdef JACK_TRANSPORT_SYNC
 void
 audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos ) {
 
@@ -403,6 +405,7 @@ audioStreamer_JACK::timebase_cb(jack_transport_state_t state, jack_nframes_t nfr
     state_last = state_current;
 
 }
+#endif // JACK_TRANSPORT_SYNC
 
 
 /* audioStreamer public constructors */
