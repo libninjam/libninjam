@@ -10,7 +10,7 @@ MaxUsers 10
 # limit normal users to 32 channels each, anonymous users to 2
 MaxChannels 32 2
 
-ServerLicense cclicense.txt
+ServerLicense /lib/libninjam/jams_license.txt
 
 #anonymoususers yes or no, or multi (to allow multiple users of the same name from the same IP)
 AnonymousUsers no

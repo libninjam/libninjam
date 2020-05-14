@@ -30,6 +30,9 @@ clean:
 	-rm $(OBJS) ../../build/ninjamsrv
 
 install: default
-	mkdir -p                      $(INSTALLDIR)/bin
-	install ../../build/ninjamsrv $(INSTALLDIR)/bin
-
+	mkdir -p                               $(INSTALLDIR)/bin
+	mkdir -p                               $(INSTALLDIR)/usr/lib/libninjam
+	install -m755 ../../build/ninjamsrv    $(INSTALLDIR)/bin
+	install -m644 cc-by-sa-4-license.txt   $(INSTALLDIR)/lib/libninjam
+	install -m644 jams_license.txt.example $(INSTALLDIR)/lib/libninjam
+	install -m644 ninjamsrv.cfg.example    $(INSTALLDIR)/lib/libninjam
