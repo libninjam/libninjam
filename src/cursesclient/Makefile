@@ -26,7 +26,7 @@ endif
 #############################################################
 
 # we MUST have -fomit-frame-pointer and -lm, otherwise we hate life
-CFLAGS = $(OPTFLAGS) -s -Wall -Wextra -I../
+CFLAGS = $(OPTFLAGS) -Wall -Wextra -I../
 # CFLAGS += -Wshadow
 CC=gcc
 CXX=g++

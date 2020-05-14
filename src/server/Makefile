@@ -2,7 +2,7 @@ DESTDIR=
 PREFIX=/usr
 INSTALLDIR=$(DESTDIR)$(PREFIX)
 
-CFLAGS = -O2 -s -Wall -Wextra -I../
+CFLAGS = -O2 -Wall -Wextra -I../
 ifdef MAC
 CFLAGS += -D_MAC
 else
