@@ -37,29 +37,18 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
-class NJClient;
 
 class audioStreamer
 {
- public:
-  audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; }
-  virtual ~audioStreamer() { }
-  
-  virtual const char *GetChannelName(int idx)=0;
-  virtual const char *GetInputChannelName(int idx) {
-    return GetChannelName(idx);
-  }
-  virtual const char *GetOutputChannelName(int idx) {
-    return GetChannelName(idx);
-  }
-  virtual bool addInputChannel() {
-    return false;
-  }
-  virtual bool addOutputChannel() {
-    return false;
-  }
+	public:
+		audioStreamer() { m_srate=48000; m_outnch=m_innch=2; m_bps=16; }
+		virtual ~audioStreamer() { }
 
-  int m_srate, m_innch, m_outnch, m_bps;
+    // call with idx of 0x80000000 to get (int) samples_latency -- if NULL (old driver), use 2 x blocksize.
+    // call with idx of 0x80000001 to get (int) samples_latemcy of just output, if NULL, use blocksize
+    virtual const char *GetChannelName(int idx)=0; 
+
+		int m_srate, m_innch, m_outnch, m_bps;
 };
 
 
@@ -74,15 +63,11 @@ audioStreamer *create_audioStreamer_DS(int srate, int bps, GUID devs[2], int *nb
 
 #else
 
-#ifdef _MAC
-audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, int bps, SPLPROC proc);
+#ifdef __APPLE__
+audioStreamer *create_audioStreamer_CoreAudio(const char **dev, int srate, int nch, int bps, SPLPROC proc);
 #else
-audioStreamer *create_audioStreamer_JACK(const char* clientName,
-					 int nInputChannels,
-					 int nOutputChannels,
-					 SPLPROC proc,
-					 NJClient *njclient);
-audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
+audioStreamer *create_audioStreamer_ALSA(const char *cfg, SPLPROC proc);
+audioStreamer *create_audioStreamer_JACK(const char *cfg, SPLPROC proc);
 #endif
 
 #endif

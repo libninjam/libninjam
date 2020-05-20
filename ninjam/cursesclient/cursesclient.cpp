@@ -42,12 +42,12 @@
 #include <signal.h>
 #include <float.h>
 
-#include <ninjam/audiostream.h>
-#include <ninjam/njclient.h>
-#include <WDL/dirscan.h>
-#include <WDL/lineparse.h>
+#include "../audiostream.h"
+#include "../njclient.h"
+#include "../../WDL/dirscan.h"
+#include "../../WDL/lineparse.h"
 
-#include <ninjam/njmisc.h>
+#include "../njmisc.h"
 
 
 #define VALIDATE_TEXT_CHAR(thischar) ((isspace(thischar) || isgraph(thischar)) && (thischar) < 256)
@@ -117,7 +117,7 @@ void addChatLine(const char *src, const char *text)
 
 WDL_String g_topic;
 
-void chatmsg_cb(int user32, NJClient *inst, const char **parms, int nparms)
+void chatmsg_cb(void *userData, NJClient *inst, const char **parms, int nparms)
 {
   if (!parms[0]) return;
 
@@ -199,7 +199,6 @@ void audiostream_onsamples(float **inbuf, int innch, float **outbuf, int outnch,
 }
 
 
-
 int g_sel_x, g_sel_ypos,g_sel_ycat;
 
 #define COLORMAP(x) color_map[x]
@@ -207,7 +206,7 @@ int g_sel_x, g_sel_ypos,g_sel_ycat;
 
 
 // highlights shit in []
-void highlightoutline(int line, char *str, int attrnorm, int bknorm, int attrhi, int bkhi, int attrsel, int bksel, int whl)
+void highlightoutline(int line, const char *str, int attrnorm, int bknorm, int attrhi, int bkhi, int attrsel, int bksel, int whl)
 {
   int state=0;
   int l=COLS-1;
@@ -232,7 +231,7 @@ void highlightoutline(int line, char *str, int attrnorm, int bknorm, int attrhi,
     {
       if (whl > 0)
       {
-        char *tmp=strstr(str,"]");
+        const char *tmp=strstr(str,"]");
         if (tmp && !strstr(tmp,"[")) 
         {
           whl=0;
@@ -633,12 +632,12 @@ void showmainview(bool action=false, int ymove=0)
       if (g_sel_x == 0)
       {
         // toggle subscribe
-        g_client->SetUserChannelState(user,a,true,sub=!sub,false,0.0f,false,0.0f,false,false,false,false,false,0,false,false);
+        g_client->SetUserChannelState(user,a,true,sub=!sub,false,0.0f,false,0.0f,false,false,false,false);
       }
       else if (g_sel_x == 1)
       {
         // toggle mute
-        g_client->SetUserChannelState(user,a,false,false,false,0.0f,false,0.0f,true,mute=!mute,false,false,false,0,false,false);
+        g_client->SetUserChannelState(user,a,false,false,false,0.0f,false,0.0f,true,mute=!mute,false,false);
       }
       else if (g_sel_x >= 2)
       {
@@ -775,7 +774,7 @@ void showmainview(bool action=false, int ymove=0)
   {
 	  bkgdset(COLORMAP(2));
 	  attrset(COLORMAP(2));
-    char *p1="RENAME CHANNEL:";
+    const char *p1="RENAME CHANNEL:";
 	  mvaddnstr(LINES-2,0,p1,COLS-1);
 	  bkgdset(COLORMAP(0));
 	  attrset(COLORMAP(0));
@@ -806,16 +805,17 @@ void usage(int noexit=0)
 
   printf("Usage: NINJAM hostname [options]\n"
     "Options:\n"
-    "  -user <username>\n"
-    "  -pass <password>\n"
+    "  -user <username> (use anonymous:name for anonymous login)\n"
+    "  -pass <password> (omit if anonymous)\n"
 #ifdef _WIN32
     "  -noaudiocfg\n"
     "  -jesusonic <path to jesusonic root dir>\n"
 #else
-#ifdef _MAC
+#ifdef __APPLE__
     "  -audiostr device_name[,output_device_name]\n"
 #else
-    "  -audiostr \"option value [option value ...]\"\n"
+    "  -jack (to use JACK)\n"
+    "  -alsaconfig \"option value [option value ...]\"\n"
     "     ALSA audio options are:\n"
     "       in hw:0,0    -- set input device\n"
     "       out hw:0,0   -- set output device\n"
@@ -837,7 +837,7 @@ void usage(int noexit=0)
   if (!noexit) exit(1);
 }
 
-int licensecallback(int user32, char *licensetext)
+int licensecallback(void *userData, const char *licensetext)
 {
   /* todo, curses shit */
 
@@ -853,7 +853,7 @@ int licensecallback(int user32, char *licensetext)
 	    attrset(COLORMAP(0));
 
       erase();
-      char *tp=licensetext;
+      const char *tp=licensetext;
       needref=0;
 	    bkgdset(COLORMAP(6));
 	    attrset(COLORMAP(6));
@@ -965,7 +965,7 @@ int main(int argc, char **argv)
   int nolog=0,nowav=1,writeogg=0,g_nssf=0;
 
   printf("NINJAM v0.01a ALPHA curses client, compiled " __DATE__ " at " __TIME__ "\nCopyright (C) 2004-2005 Cockos, Inc.\n\n");
-  char *audioconfigstr=NULL;
+  const char *audioconfigstr=NULL;
   g_client=new NJClient;
   g_client->config_savelocalaudio=1;
   g_client->LicenseAgreementCallback=licensecallback;
@@ -973,7 +973,7 @@ int main(int argc, char **argv)
 
   char *hostname;
 
-#if 1//def _MAC
+#if 1//def __APPLE__
   char hostbuf[512];
   if (argc < 2)
   {
@@ -1013,7 +1013,8 @@ int main(int argc, char **argv)
       {
         audioconfigstr="";
       }
-      else if (!stricmp(argv[p],"-audiostr"))
+      else if (!stricmp(argv[p],"-jack")) audioconfigstr="JACK";
+      else if (!stricmp(argv[p],"-alsaconfig"))
       {
         if (++p >= argc) usage();
         audioconfigstr=argv[p];
@@ -1094,11 +1095,13 @@ int main(int argc, char **argv)
 
 #else
   {
-    char *dev_name_in=audioconfigstr;
-#ifdef _MAC
+    const char *dev_name_in=audioconfigstr;
+#ifdef __APPLE__
     g_audio=create_audioStreamer_CoreAudio(&dev_name_in,48000,2,16,audiostream_onsamples);
 #else
-    g_audio=create_audioStreamer_JACK("ninjam", 4, 4, audiostream_onsamples,g_client);
+    if (dev_name_in && !strcmp(dev_name_in,"JACK"))
+	g_audio=create_audioStreamer_JACK(dev_name_in,audiostream_onsamples);
+    else g_audio=create_audioStreamer_ALSA(dev_name_in,audiostream_onsamples);
 #endif
   }
 #endif
@@ -1277,7 +1280,7 @@ int main(int argc, char **argv)
       sprintf(buf,"%04d%02d%02d_%02d%02d",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
 #endif
       if (cnt)
-        wsprintf(buf+strlen(buf),"_%d",cnt);
+        sprintf(buf+strlen(buf),"_%d",cnt);
       strcat(buf,".ninjam");
 
 #ifdef _WIN32
@@ -1445,7 +1448,7 @@ int main(int argc, char **argv)
 #endif
 
       int a=getch();
-#ifdef _MAC
+#ifdef __APPLE__
 		{
 			static timeval last_t;
 			static int stage;
@@ -1467,10 +1470,10 @@ int main(int argc, char **argv)
 				else if (stage) { a = 27; stage=0; }
 			}
 		}
+		if (a == 127) a = KEY_BACKSPACE;
 		if (a == KEY_F(7)) a = KEY_F(11);
 		if (a == KEY_F(8)) a = KEY_F(12);
 #endif
-		if (a == 127) a = KEY_BACKSPACE;
       if (a!=ERR)
       {
         if (!g_ui_state) switch (a)
@@ -1620,7 +1623,7 @@ int main(int argc, char **argv)
                   if (g_ui_voltweakstate_channel == -2) g_client->config_masterpan=pan;
                   else if (g_ui_voltweakstate_channel == -1) g_client->config_metronome_pan=pan;
                   else if (g_ui_voltweakstate_channel>=1024)
-                    g_client->SetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, false,false,false,0.0f,true,pan,false,false,false,false,false,0,false,false);
+                    g_client->SetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, false,false,false,0.0f,true,pan,false,false,false,false);
                   else
                     g_client->SetLocalChannelMonitoring(g_ui_voltweakstate_channel,false,0.0f,true,pan,false,false,false,false);
                   showmainview();
@@ -1652,7 +1655,7 @@ int main(int argc, char **argv)
                   if (g_ui_voltweakstate_channel == -2) g_client->config_mastervolume=vol;
                   else if (g_ui_voltweakstate_channel == -1) g_client->config_metronome=vol;
                   else if (g_ui_voltweakstate_channel>=1024)
-                    g_client->SetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, false,false,true,vol,false,0.0f,false,false,false,false,false,0,false,false);
+                    g_client->SetUserChannelState((g_ui_voltweakstate_channel-1024)/64,g_ui_voltweakstate_channel%64, false,false,true,vol,false,0.0f,false,false,false,false);
                   else
                     g_client->SetLocalChannelMonitoring(g_ui_voltweakstate_channel,true,vol,false,0.0f,false,false,false,false);
                   showmainview();

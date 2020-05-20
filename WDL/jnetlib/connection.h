@@ -1,12 +1,13 @@
 /*
 ** JNetLib
+** Copyright (C) 2008 Cockos Inc
 ** Copyright (C) 2000-2001 Nullsoft, Inc.
 ** Author: Justin Frankel
 ** File: connection.h - JNL TCP connection interface
 ** License: see jnetlib.h
 **
 ** Usage:
-**   1. Create a JNL_Connection object, optionally specifying a JNL_AsyncDNS
+**   1. Create a JNL_Connection object, optionally specifying a JNL_IAsyncDNS
 **      object to use (or NULL for none, or JNL_CONNECTION_AUTODNS for auto),
 **      and the send and receive buffer sizes.
 **   2. Call connect() to have it connect to a host/port (the hostname will be 
@@ -56,12 +57,60 @@
 #define _CONNECTION_H_
 
 #include "asyncdns.h"
+#include "netinc.h"
+#include "../heapbuf.h"
 
-#define JNL_CONNECTION_AUTODNS ((JNL_AsyncDNS*)-1)
+#define JNL_CONNECTION_AUTODNS ((JNL_IAsyncDNS*)-1)
 
 struct sockaddr_in;
 
-class JNL_Connection
+#ifndef JNL_NO_DEFINE_INTERFACES
+class JNL_IConnection
+{
+  public:
+    virtual ~JNL_IConnection() { }
+    virtual void connect(const char *hostname, int port)=0;
+    virtual void connect(SOCKET sock, struct sockaddr_in *loc=NULL)=0; // used by the listen object, usually not needed by users.
+
+    virtual void run(int max_send_bytes=-1, int max_recv_bytes=-1, int *bytes_sent=NULL, int *bytes_rcvd=NULL)=0;
+    virtual int  get_state()=0;
+    virtual const char *get_errstr()=0;
+
+    virtual void close(int quick=0)=0;
+    virtual void flush_send(void)=0;
+
+    virtual int send_bytes_in_queue(void)=0;
+    virtual int send_bytes_available(void)=0;
+    virtual int send(const void *data, int length)=0; // returns -1 if not enough room
+    virtual int send_bytes(const void *data, int length)=0;
+    virtual int send_string(const char *line)=0;      // returns -1 if not enough room
+
+    virtual int recv_bytes_available(void)=0;
+    virtual int recv_bytes(void *data, int maxlength)=0; // returns actual bytes read
+    virtual int recv_lines_available(void)=0;
+    virtual int recv_line(char *line, int maxlength)=0; // returns 0 if the line was terminated with a \r or \n, 1 if not.
+                                              // (i.e. if you specify maxlength=10, and the line is 12 bytes long
+                                              // it will return 1. or if there is no \r or \n and that's all the data
+                                              // the connection has.)
+    virtual int recv_get_linelen()=0; // length in bytes for current line (including \r and/or \n), or 0 if no newline in buffer
+    virtual int peek_bytes(void *data, int maxlength)=0; // returns bytes peeked
+
+    virtual unsigned int get_interface(void)=0;        // this returns the interface the connection is on
+    virtual unsigned int get_remote(void)=0; // remote host ip.
+    virtual short get_remote_port(void)=0; // this returns the remote port of connection
+
+    virtual void set_interface(int useInterface)=0; // call before connect if needed
+  };
+
+  #define JNL_Connection_PARENTDEF : public JNL_IConnection
+#else
+  #define JNL_IConnection JNL_Connection
+  #define JNL_Connection_PARENTDEF
+#endif
+
+#ifndef JNL_NO_IMPLEMENTATION
+  
+class JNL_Connection JNL_Connection_PARENTDEF
 {
   public:
     typedef enum 
@@ -75,15 +124,15 @@ class JNL_Connection
       STATE_CLOSED 
     } state;
 
-    JNL_Connection(JNL_AsyncDNS *dns=JNL_CONNECTION_AUTODNS, int sendbufsize=8192, int recvbufsize=8192);
+    JNL_Connection(JNL_IAsyncDNS *dns=JNL_CONNECTION_AUTODNS, int sendbufsize=8192, int recvbufsize=8192);
     ~JNL_Connection();
 
-    void connect(char *hostname, int port);
-    void connect(int sock, struct sockaddr_in *loc=NULL); // used by the listen object, usually not needed by users.
+    void connect(const char *hostname, int port);
+    void connect(SOCKET sock, struct sockaddr_in *loc=NULL); // used by the listen object, usually not needed by users.
 
     void run(int max_send_bytes=-1, int max_recv_bytes=-1, int *bytes_sent=NULL, int *bytes_rcvd=NULL);
     int  get_state() { return m_state; }
-    char *get_errstr() { return m_errorstr; }
+    const char *get_errstr() { return m_errorstr; }
 
     void close(int quick=0);
     void flush_send(void) { m_send_len=m_send_pos=0; }
@@ -97,42 +146,45 @@ class JNL_Connection
 
     int recv_bytes_available(void);
     int recv_bytes(void *data, int maxlength); // returns actual bytes read
-    unsigned int recv_int(void);
     int recv_lines_available(void);
     int recv_line(char *line, int maxlength); // returns 0 if the line was terminated with a \r or \n, 1 if not.
                                               // (i.e. if you specify maxlength=10, and the line is 12 bytes long
                                               // it will return 1. or if there is no \r or \n and that's all the data
                                               // the connection has.)
+    int recv_get_linelen();                   // length in bytes for current line (including \r and/or \n), or 0 if no newline in buffer
     int peek_bytes(void *data, int maxlength); // returns bytes peeked
 
-    unsigned long get_interface(void);        // this returns the interface the connection is on
-    unsigned long get_remote(void); // remote host ip.
+    unsigned int get_interface(void);        // this returns the interface the connection is on
+    unsigned int get_remote(void); // remote host ip.
     short get_remote_port(void); // this returns the remote port of connection
   
+    void set_interface(int useInterface); // call before connect if needed
+
   protected:
-    int  m_socket;
+    SOCKET m_socket;
     short m_remote_port;
-    char *m_recv_buffer;
-    char *m_send_buffer;
-    int m_recv_buffer_len;
-    int m_send_buffer_len;
+    WDL_TypedBuf<unsigned char> m_recv_buffer;
+    WDL_TypedBuf<unsigned char> m_send_buffer;
 
     int  m_recv_pos;
     int  m_recv_len;
     int  m_send_pos;
     int  m_send_len;
 
+    int m_localinterfacereq;
     struct sockaddr_in *m_saddr;
     char m_host[256];
 
-    JNL_AsyncDNS *m_dns;
+    JNL_IAsyncDNS *m_dns;
     int m_dns_owned;
 
     state m_state;
-    char *m_errorstr;
+    const char *m_errorstr;
 
     int getbfromrecv(int pos, int remove); // used by recv_line*
 
 };
+
+#endif
 
 #endif // _Connection_H_

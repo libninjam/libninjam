@@ -29,8 +29,8 @@
 #ifndef _NETMSG_H_
 #define _NETMSG_H_
 
-#include <WDL/queue.h>
-#include <WDL/jnetlib/jnetlib.h>
+#include "../WDL/queue.h"
+#include "../WDL/jnetlib/jnetlib.h"
 
 #define NET_MESSAGE_MAX_SIZE 16384
 
@@ -45,39 +45,42 @@
 
 class Net_Message
 {
-	public:
-		Net_Message() : m_parsepos(0), m_refcnt(0), m_type(MESSAGE_INVALID)
-		{
-		}
-		~Net_Message()
-		{
-		}
+  public:
+    Net_Message() : m_parsepos(0), m_refcnt(0), m_type(MESSAGE_INVALID)
+    {
+    }
+    ~Net_Message()
+    {
+    }
 
 
-		void set_type(int type)	{ m_type=type; }
-		int  get_type() { return m_type; }
+    void set_type(int type)  { m_type=type; }
+    int  get_type() const { return m_type; }
 
-		void set_size(int newsize) { m_hb.Resize(newsize); }
-		int get_size() { return m_hb.GetSize(); }
+    void set_size(int newsize) 
+    { 
+      m_hb.Resize(newsize); 
+      if (m_hb.GetSize() != newsize) m_hb.Resize(0);
+    }
+    int get_size() const { return m_hb.GetSize(); }
 
-		void *get_data() { return m_hb.Get(); }
+    void *get_data() { return m_hb.Get(); }
 
-
-		int parseMessageHeader(void *data, int len); // returns bytes used, if any (or 0 if more data needed), or -1 if invalid
+    int parseMessageHeader(void *data, int len); // returns bytes used, if any (or 0 if more data needed), or -1 if invalid
     int parseBytesNeeded();
     int parseAddBytes(void *data, int len); // returns bytes actually added
 
-		int makeMessageHeader(void *data); // makes message header, returns length. data should be at least 16 bytes to be safe
+    int makeMessageHeader(void *data); // makes message header, returns length. data should be at least 16 bytes to be safe
 
 
-		void addRef() { ++m_refcnt; }
-		void releaseRef() { if (--m_refcnt < 1) delete this; }
+    void addRef() { ++m_refcnt; }
+    void releaseRef() { if (--m_refcnt < 1) delete this; }
 
-	private:
-    		int m_parsepos;
-		int m_refcnt;
-		int m_type;
-		WDL_HeapBuf m_hb;
+  private:
+    int m_parsepos;
+    int m_refcnt;
+    int m_type;
+    WDL_HeapBuf m_hb;
 };
 
 
@@ -90,7 +93,7 @@ class Net_Connection
     }
     ~Net_Connection();
 
-    void attach(JNL_Connection *con) 
+    void attach(JNL_IConnection *con) 
     {
       m_con=con; 
     }
@@ -98,7 +101,7 @@ class Net_Connection
     Net_Message *Run(int *wantsleep=0);
     int Send(Net_Message *msg); // -1 on error, i.e. queue full
     int GetStatus(); // returns <0 on error, 0 on normal, 1 on disconnect
-    JNL_Connection *GetConnection() { return m_con; }
+    JNL_IConnection *GetConnection() { return m_con; }
 
     void SetKeepAlive(int interval)
     {
@@ -119,7 +122,7 @@ class Net_Connection
     int m_recvstate;
     Net_Message *m_recvmsg;
 
-    JNL_Connection *m_con;
+    JNL_IConnection *m_con;
     WDL_Queue m_sendq;
 
 

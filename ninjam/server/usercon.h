@@ -33,11 +33,11 @@
 #define _USERCON_H_
 
 
-#include <ninjam/netmsg.h>
-#include <WDL/string.h>
-#include <WDL/sha.h>
-#include <WDL/ptrlist.h>
-#include <ninjam/mpb.h>
+#include "../netmsg.h"
+#include "../../WDL/wdlstring.h"
+#include "../../WDL/sha.h"
+#include "../../WDL/ptrlist.h"
+#include "../mpb.h"
 
 #define MAX_USER_CHANNELS 32
 #define MAX_USERS 64
@@ -52,6 +52,7 @@
 #define PRIV_ALLOWMULTI 32 // allows multiple users by the same name (subsequent users append -X to them)
 #define PRIV_HIDDEN 64   // hidden user, doesn't count for a slot, too
 #define PRIV_VOTE 128
+#define PRIV_SHOW_PRIVATE 256
 
 #define MAX_BPM 400
 #define MAX_BPI 64
@@ -89,7 +90,7 @@ class User_Group
     User_Group();
     ~User_Group();
 
-    void AddConnection(JNL_Connection *con, int isres=0);
+    void AddConnection(JNL_IConnection *con, int isres=0);
 
     int Run(); // return 1 if safe to sleep
     void SetConfig(int bpi, int bpm);
@@ -105,7 +106,7 @@ class User_Group
     IUserInfoLookup *(*CreateUserLookup)(char *username);
 
     void onChatMessage(User_Connection *con, mpb_chat_message *msg);
-    
+
 
     WDL_PtrList<User_Connection> m_users;
 
@@ -123,10 +124,16 @@ class User_Group
 
     int m_allow_hidden_users;
 
+#define LOBBY_ALLOW_CHAT 2
+    int m_is_lobby_mode; // nonzero for lobby (and LOBBY_ALLOW_CHAT etc optional)
+
     WDL_String m_licensetext;
     WDL_String m_topictext;
 
     WDL_String m_logdir;
+
+    WDL_FastString m_motdfile;
+
     FILE *m_logfp;
 
 #ifdef _WIN32
@@ -188,7 +195,7 @@ public:
 class User_Connection
 {
   public:
-    User_Connection(JNL_Connection *con, User_Group *grp);
+    User_Connection(JNL_IConnection *con, User_Group *grp);
     ~User_Connection();
 
     int Run(User_Group *group, int *wantsleep=0); // returns 1 if disconnected, -1 if error in data. 0 if ok.
@@ -199,6 +206,11 @@ class User_Connection
     int OnRunAuth(User_Group *group);
 
     void SendUserList(User_Group *group);
+    void SendConnectInfo(User_Group *group);
+    void SendAuthReply(User_Group *group); // sends "success"
+
+    void SendPrivateModeStats(const char *req);
+    void SendMOTDFile(User_Group *group);
 
     Net_Connection m_netcon;
     WDL_String m_username;
@@ -228,8 +240,12 @@ class User_Connection
     WDL_PtrList<User_TransferState> m_sendfiles;
 
     IUserInfoLookup *m_lookup;
+
+    bool migrateToRoom(const char *p);
+    WDL_FastString m_wants_group_migration; // set from lobby in private group mode
 };
 
 
+const char *get_privatemode_stats(int privs, const char *req);
 
 #endif//_USERCON_H_

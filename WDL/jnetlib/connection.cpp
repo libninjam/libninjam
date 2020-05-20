@@ -1,5 +1,6 @@
 /*
 ** JNetLib
+** Copyright (C) 2008 Cockos Inc
 ** Copyright (C) 2000-2001 Nullsoft, Inc.
 ** Author: Justin Frankel
 ** File: connection.cpp - JNL TCP connection implementation
@@ -11,7 +12,7 @@
 #include "connection.h"
 
 
-JNL_Connection::JNL_Connection(JNL_AsyncDNS *dns, int sendbufsize, int recvbufsize)
+JNL_Connection::JNL_Connection(JNL_IAsyncDNS *dns, int sendbufsize, int recvbufsize)
 {
   m_errorstr="";
   if (dns == JNL_CONNECTION_AUTODNS)
@@ -24,32 +25,30 @@ JNL_Connection::JNL_Connection(JNL_AsyncDNS *dns, int sendbufsize, int recvbufsi
     m_dns=dns;
     m_dns_owned=0;
   }
-  m_recv_buffer_len=recvbufsize;
-  m_send_buffer_len=sendbufsize;
-  m_recv_buffer=(char*)malloc(m_recv_buffer_len);
-  m_send_buffer=(char*)malloc(m_send_buffer_len);
-  m_socket=-1;
-  memset(m_recv_buffer,0,recvbufsize);
-  memset(m_send_buffer,0,sendbufsize);
+  m_recv_buffer.Resize(recvbufsize);
+  m_send_buffer.Resize(sendbufsize);
+  m_socket=INVALID_SOCKET;
   m_remote_port=0;
   m_state=STATE_NOCONNECTION;
+  m_localinterfacereq=INADDR_ANY;
   m_recv_len=m_recv_pos=0;
   m_send_len=m_send_pos=0;
   m_host[0]=0;
   m_saddr = new struct sockaddr_in;
-  memset(m_saddr,0,sizeof(m_saddr));
+  memset(m_saddr,0,sizeof(struct sockaddr_in));
 }
 
-void JNL_Connection::connect(int s, struct sockaddr_in *loc)
+void JNL_Connection::connect(SOCKET s, struct sockaddr_in *loc)
 {
   close(1);
   m_socket=s;
   m_remote_port=0;
   m_dns=NULL;
   if (loc) *m_saddr=*loc;
-  else memset(m_saddr,0,sizeof(m_saddr));
-  if (m_socket != -1)
+  else memset(m_saddr,0,sizeof(struct sockaddr_in));
+  if (m_socket != INVALID_SOCKET)
   {
+    SET_SOCK_DEFAULTS(m_socket);
     SET_SOCK_BLOCK(m_socket,0);
     m_state=STATE_CONNECTED;
   }
@@ -60,22 +59,30 @@ void JNL_Connection::connect(int s, struct sockaddr_in *loc)
   }
 }
 
-void JNL_Connection::connect(char *hostname, int port)
+void JNL_Connection::connect(const char *hostname, int port)
 {
   close(1);
   m_remote_port=(short)port;
   m_socket=::socket(AF_INET,SOCK_STREAM,0);
-  if (m_socket==-1)
+  if (m_socket==INVALID_SOCKET)
   {
     m_errorstr="creating socket";
     m_state=STATE_ERROR;
   }
   else
   {
+    if (m_localinterfacereq != INADDR_ANY)
+    {
+      sockaddr_in sa={0,};
+      sa.sin_family=AF_INET;
+      sa.sin_addr.s_addr=m_localinterfacereq;
+      bind(m_socket,(struct sockaddr *)&sa,16);
+    }
+    SET_SOCK_DEFAULTS(m_socket);
     SET_SOCK_BLOCK(m_socket,0);
     strncpy(m_host,hostname,sizeof(m_host)-1);
     m_host[sizeof(m_host)-1]=0;
-    memset(m_saddr,0,sizeof(m_saddr));
+    memset(m_saddr,0,sizeof(struct sockaddr_in));
     if (!m_host[0])
     {
       m_errorstr="empty hostname";
@@ -93,14 +100,12 @@ void JNL_Connection::connect(char *hostname, int port)
 
 JNL_Connection::~JNL_Connection()
 {
-  if (m_socket >= 0)
+  if (m_socket != INVALID_SOCKET)
   {
     ::shutdown(m_socket, SHUT_RDWR);
     ::closesocket(m_socket);
-    m_socket=-1;
+    m_socket=INVALID_SOCKET;
   }
-  free(m_recv_buffer);
-  free(m_send_buffer);
   if (m_dns_owned) 
   {
     delete m_dns;
@@ -110,8 +115,8 @@ JNL_Connection::~JNL_Connection()
 
 void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent, int *bytes_rcvd)
 {
-  int bytes_allowed_to_send=(max_send_bytes<0)?m_send_buffer_len:max_send_bytes;
-  int bytes_allowed_to_recv=(max_recv_bytes<0)?m_recv_buffer_len:max_recv_bytes;
+  int bytes_allowed_to_send=(max_send_bytes<0)?m_send_buffer.GetSize():max_send_bytes;
+  int bytes_allowed_to_recv=(max_recv_bytes<0)?m_recv_buffer.GetSize():max_recv_bytes;
 
   if (bytes_sent) *bytes_sent=0;
   if (bytes_rcvd) *bytes_rcvd=0;
@@ -121,7 +126,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
     case STATE_RESOLVING:
       if (m_saddr->sin_addr.s_addr == INADDR_NONE)
       {
-        int a=m_dns?m_dns->resolve(m_host,(unsigned long int *)&m_saddr->sin_addr.s_addr):-1;
+        int a=m_dns?m_dns->resolve(m_host,(unsigned int *)&m_saddr->sin_addr.s_addr):-1;
         if (!a) { m_state=STATE_CONNECTING; }
         else if (a == 1)
         {
@@ -139,7 +144,7 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
       {
         m_state=STATE_CONNECTED;
       }
-      else if (ERRNO!=EINPROGRESS)
+      else if (JNL_ERRNO!=JNL_EINPROGRESS)
       {
         m_errorstr="connecting to host";
         m_state=STATE_ERROR;
@@ -157,7 +162,13 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
         FD_SET(m_socket,&f[2]);
         struct timeval tv;
         memset(&tv,0,sizeof(tv));
-        if (select(m_socket+1,&f[0],&f[1],&f[2],&tv)==-1)
+        if (select(
+#ifdef _WIN32
+          0
+#else
+          m_socket+1
+#endif
+          ,&f[0],&f[1],&f[2],&tv)==-1)
         {
           m_errorstr="connecting to host (calling select())";
           m_state=STATE_ERROR;
@@ -177,13 +188,13 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
     case STATE_CLOSING:
       if (m_send_len>0 && bytes_allowed_to_send>0)
       {
-        int len=m_send_buffer_len-m_send_pos;
+        int len=m_send_buffer.GetSize()-m_send_pos;
         if (len > m_send_len) len=m_send_len;
         if (len > bytes_allowed_to_send) len=bytes_allowed_to_send;
         if (len > 0)
         {
-          int res=::send(m_socket,m_send_buffer+m_send_pos,len,0);
-          if (res==-1 && ERRNO != EWOULDBLOCK)
+          int res=(int)::send(m_socket,(char*)m_send_buffer.Get()+m_send_pos,len,0);
+          if (res==-1 && JNL_ERRNO != JNL_EWOULDBLOCK)
           {            
 //            m_state=STATE_CLOSED;
 //            return;
@@ -196,16 +207,16 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
             m_send_len-=res;
           }
         }
-        if (m_send_pos>=m_send_buffer_len) 
+        if (m_send_pos>=m_send_buffer.GetSize()) 
         {
           m_send_pos=0;
           if (m_send_len>0)
           {
-            len=m_send_buffer_len-m_send_pos;
+            len=m_send_buffer.GetSize()-m_send_pos;
             if (len > m_send_len) len=m_send_len;
             if (len > bytes_allowed_to_send) len=bytes_allowed_to_send;
-            int res=::send(m_socket,m_send_buffer+m_send_pos,len,0);
-            if (res==-1 && ERRNO != EWOULDBLOCK)
+            int res=(int)::send(m_socket,(char*)m_send_buffer.Get()+m_send_pos,len,0);
+            if (res==-1 && JNL_ERRNO != JNL_EWOULDBLOCK)
             {
 //              m_state=STATE_CLOSED;
             }
@@ -219,15 +230,15 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
           }
         }
       }
-      if (m_recv_len<m_recv_buffer_len)
+      if (m_recv_len<m_recv_buffer.GetSize())
       {
-        int len=m_recv_buffer_len-m_recv_pos;
-        if (len > m_recv_buffer_len-m_recv_len) len=m_recv_buffer_len-m_recv_len;
+        int len=m_recv_buffer.GetSize()-m_recv_pos;
+        if (len > m_recv_buffer.GetSize()-m_recv_len) len=m_recv_buffer.GetSize()-m_recv_len;
         if (len > bytes_allowed_to_recv) len=bytes_allowed_to_recv;
         if (len>0)
         {
-          int res=::recv(m_socket,m_recv_buffer+m_recv_pos,len,0);
-          if (res == 0 || (res < 0 && ERRNO != EWOULDBLOCK))
+          int res=(int)::recv(m_socket,(char*)m_recv_buffer.Get()+m_recv_pos,len,0);
+          if (res == 0 || (res < 0 && JNL_ERRNO != JNL_EWOULDBLOCK))
           {        
             m_state=STATE_CLOSED;
             break;
@@ -240,17 +251,17 @@ void JNL_Connection::run(int max_send_bytes, int max_recv_bytes, int *bytes_sent
             m_recv_len+=res;
           }
         }
-        if (m_recv_pos >= m_recv_buffer_len)
+        if (m_recv_pos >= m_recv_buffer.GetSize())
         {
           m_recv_pos=0;
-          if (m_recv_len < m_recv_buffer_len)
+          if (m_recv_len < m_recv_buffer.GetSize())
           {
-            len=m_recv_buffer_len-m_recv_len;
+            len=m_recv_buffer.GetSize()-m_recv_len;
             if (len > bytes_allowed_to_recv) len=bytes_allowed_to_recv;
             if (len > 0)
             {
-              int res=::recv(m_socket,m_recv_buffer+m_recv_pos,len,0);
-              if (res == 0 || (res < 0 && ERRNO != EWOULDBLOCK))
+              int res=(int)::recv(m_socket,(char*)m_recv_buffer.Get()+m_recv_pos,len,0);
+              if (res == 0 || (res < 0 && JNL_ERRNO != JNL_EWOULDBLOCK))
               {        
                 m_state=STATE_CLOSED;
                 break;
@@ -280,19 +291,17 @@ void JNL_Connection::close(int quick)
   if (quick || m_state == STATE_RESOLVING || m_state == STATE_CONNECTING)
   {
     m_state=STATE_CLOSED;
-    if (m_socket >= 0)
+    if (m_socket != INVALID_SOCKET)
     {
       ::shutdown(m_socket, SHUT_RDWR);
       ::closesocket(m_socket);
     }
-    m_socket=-1;
-    memset(m_recv_buffer,0,m_recv_buffer_len);
-    memset(m_send_buffer,0,m_send_buffer_len);
+    m_socket=INVALID_SOCKET;
     m_remote_port=0;
     m_recv_len=m_recv_pos=0;
     m_send_len=m_send_pos=0;
     m_host[0]=0;
-    memset(m_saddr,0,sizeof(m_saddr));
+    memset(m_saddr,0,sizeof(struct sockaddr_in));
   }
   else
   {
@@ -307,7 +316,7 @@ int JNL_Connection::send_bytes_in_queue(void)
 
 int JNL_Connection::send_bytes_available(void)
 {
-  return m_send_buffer_len-m_send_len;
+  return m_send_buffer.GetSize()-m_send_len;
 }
 
 int JNL_Connection::send(const void *_data, int length)
@@ -319,21 +328,21 @@ int JNL_Connection::send(const void *_data, int length)
   }
   
   int write_pos=m_send_pos+m_send_len;
-  if (write_pos >= m_send_buffer_len) 
+  if (write_pos >= m_send_buffer.GetSize()) 
   {
-    write_pos-=m_send_buffer_len;
+    write_pos-=m_send_buffer.GetSize();
   }
 
-  int len=m_send_buffer_len-write_pos;
+  int len=m_send_buffer.GetSize()-write_pos;
   if (len > length) 
   {
     len=length;
   }
 
-  memcpy(m_send_buffer+write_pos,data,len);
+  memcpy(m_send_buffer.Get()+write_pos,data,len);
   if (length > len)
   {
-    memcpy(m_send_buffer,data+len,length-len);
+    memcpy(m_send_buffer.Get(),data+len,length-len);
   }
   m_send_len+=length;
   return 0;
@@ -341,7 +350,7 @@ int JNL_Connection::send(const void *_data, int length)
 
 int JNL_Connection::send_string(const char *line)
 {
-  return send(line,strlen(line));
+  return send(line,(int)strlen(line));
 }
 
 int JNL_Connection::recv_bytes_available(void)
@@ -349,9 +358,8 @@ int JNL_Connection::recv_bytes_available(void)
   return m_recv_len;
 }
 
-int JNL_Connection::peek_bytes(void *_data, int maxlength)
+int JNL_Connection::peek_bytes(void *data, int maxlength)
 {
-  char *data = static_cast<char *>(_data);
   if (maxlength > m_recv_len)
   {
     maxlength=m_recv_len;
@@ -359,18 +367,18 @@ int JNL_Connection::peek_bytes(void *_data, int maxlength)
   int read_pos=m_recv_pos-m_recv_len;
   if (read_pos < 0) 
   {
-    read_pos += m_recv_buffer_len;
+    read_pos += m_recv_buffer.GetSize();
   }
-  int len=m_recv_buffer_len-read_pos;
+  int len=m_recv_buffer.GetSize()-read_pos;
   if (len > maxlength)
   {
     len=maxlength;
   }
   if (data != NULL) {
-    memcpy(data,m_recv_buffer+read_pos,len);
+    memcpy(data,m_recv_buffer.Get()+read_pos,len);
     if (len < maxlength)
     {
-      memcpy(data+len,m_recv_buffer,maxlength-len);
+      memcpy((char*)data+len,m_recv_buffer.Get(),maxlength-len);
     }
   }
 
@@ -392,14 +400,14 @@ int JNL_Connection::getbfromrecv(int pos, int remove)
   if (pos < 0 || pos > m_recv_len) return -1;
   if (read_pos < 0) 
   {
-    read_pos += m_recv_buffer_len;
+    read_pos += m_recv_buffer.GetSize();
   }
-  if (read_pos >= m_recv_buffer_len)
+  if (read_pos >= m_recv_buffer.GetSize())
   {
-    read_pos-=m_recv_buffer_len;
+    read_pos-=m_recv_buffer.GetSize();
   }
   if (remove) m_recv_len--;
-  return m_recv_buffer[read_pos];
+  return m_recv_buffer.Get()[read_pos];
 }
 
 int JNL_Connection::recv_lines_available(void)
@@ -420,10 +428,30 @@ int JNL_Connection::recv_lines_available(void)
   return lcount;
 }
 
+int JNL_Connection::recv_get_linelen()
+{
+  int l = 0;
+  while (l < m_recv_len)
+  {
+    int t=getbfromrecv(l,0);
+    if (t<0) return 0;
+
+    if (t == '\r' || t == '\n')
+    {
+      int r=getbfromrecv(++l,0);
+      if ((r == '\r' || r == '\n') && r != t) l++;
+      return l;
+    }
+    l++;
+  }
+  return 0;
+}
+
 int JNL_Connection::recv_line(char *line, int maxlength)
 {
+  maxlength--; // room for trailing NUL
   if (maxlength > m_recv_len) maxlength=m_recv_len;
-  while (maxlength--)
+  while (maxlength-- > 0)
   {
     int t=getbfromrecv(0,1);
     if (t == -1) 
@@ -440,20 +468,27 @@ int JNL_Connection::recv_line(char *line, int maxlength)
     }
     *line++=(char)t;
   }
+  *line=0;
   return 1;
 }
 
-unsigned long JNL_Connection::get_interface(void)
+void JNL_Connection::set_interface(int useInterface) // call before connect if needed
 {
-  if (m_socket==-1) return 0;
+  m_localinterfacereq = useInterface;
+}
+
+
+unsigned int JNL_Connection::get_interface(void)
+{
+  if (m_socket==INVALID_SOCKET) return 0;
   struct sockaddr_in sin;
   memset(&sin,0,sizeof(sin));
   socklen_t len=16;
   if (::getsockname(m_socket,(struct sockaddr *)&sin,&len)) return 0;
-  return (unsigned long) sin.sin_addr.s_addr;
+  return (unsigned int) sin.sin_addr.s_addr;
 }
 
-unsigned long JNL_Connection::get_remote()
+unsigned int JNL_Connection::get_remote()
 {
   return m_saddr->sin_addr.s_addr;
 }

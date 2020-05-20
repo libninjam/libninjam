@@ -110,14 +110,13 @@ void jesusonic_processor(float *buf, int len, void *inst)
 {
   if (inst)
   {
-    _controlfp(_RC_CHOP,_MCW_RC);
-    JesusonicAPI->jesus_process_samples(inst,(char*)buf,len*sizeof(float));
+    JesusonicAPI->jesus_process_samples(inst,(char*)buf,len*sizeof(float),0.0f,0,0,0);
     JesusonicAPI->osc_run(inst,(char*)buf,len);
   }
 }
 
 
-void JesusUpdateInfo(void *myInst, char *chdesc, int srate)
+void JesusUpdateInfo(void *myInst, const char *chdesc, int srate)
 {
   if (myInst)
   {
@@ -128,7 +127,7 @@ void JesusUpdateInfo(void *myInst, char *chdesc, int srate)
   }
 }
 
-void *CreateJesusInstance(int a, char *chdesc, int srate)
+void *CreateJesusInstance(int a, const char *chdesc, int srate)
 {
   if (JesusonicAPI)
   {

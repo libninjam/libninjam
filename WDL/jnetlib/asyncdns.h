@@ -1,5 +1,6 @@
 /*
 ** JNetLib
+** Copyright (C) 2008 Cockos Inc
 ** Copyright (C) 2000-2001 Nullsoft, Inc.
 ** Author: Justin Frankel
 ** File: asyncdns.h - JNL portable asynchronous DNS interface
@@ -18,23 +19,42 @@
 #ifndef _ASYNCDNS_H_
 #define _ASYNCDNS_H_
 
-class JNL_AsyncDNS
+#include <time.h>
+
+#ifndef JNL_NO_DEFINE_INTERFACES
+class JNL_IAsyncDNS
+{
+public:
+  virtual ~JNL_IAsyncDNS() { }
+  virtual int resolve(const char *hostname, unsigned int *addr)=0; // return 0 on success, 1 on wait, -1 on unresolvable
+  virtual int reverse(unsigned int addr, char *hostname)=0; // return 0 on success, 1 on wait, -1 on unresolvable. hostname must be at least 256 bytes.
+};
+#define JNL_AsyncDNS_PARENTDEF : public JNL_IAsyncDNS
+#else 
+#define JNL_IAsyncDNS JNL_AsyncDNS
+#define JNL_AsyncDNS_PARENTDEF
+#endif
+
+
+#ifndef JNL_NO_IMPLEMENTATION
+
+class JNL_AsyncDNS JNL_AsyncDNS_PARENTDEF
 {
 public:
   JNL_AsyncDNS(int max_cache_entries=64);
   ~JNL_AsyncDNS();
 
-  int resolve(char *hostname, unsigned long *addr); // return 0 on success, 1 on wait, -1 on unresolvable
-  int reverse(unsigned long addr, char *hostname); // return 0 on success, 1 on wait, -1 on unresolvable. hostname must be at least 256 bytes.
+  int resolve(const char *hostname, unsigned int *addr); // return 0 on success, 1 on wait, -1 on unresolvable
+  int reverse(unsigned int addr, char *hostname); // return 0 on success, 1 on wait, -1 on unresolvable. hostname must be at least 256 bytes.
 
 private:
   typedef struct 
   {
-    int last_used; // timestamp.
+    time_t last_used; // timestamp.
     char resolved;
     char mode; // 1=reverse
     char hostname[256];
-    unsigned long addr;
+    unsigned int addr;
   } 
   cache_entry;
 
@@ -43,7 +63,7 @@ private:
   volatile int m_thread_kill;
 #ifdef _WIN32
   HANDLE m_thread;
-  static unsigned long WINAPI _threadfunc(LPVOID _d);
+  static unsigned WINAPI _threadfunc(void *_d);
 #else
   pthread_t m_thread;
   static unsigned int _threadfunc(void *_d);
@@ -51,5 +71,6 @@ private:
   void makesurethreadisrunning(void);
 
 };
+#endif // !JNL_NO_IMPLEMENTATION
 
 #endif //_ASYNCDNS_H_

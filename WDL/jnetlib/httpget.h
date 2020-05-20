@@ -1,5 +1,6 @@
 /*
 ** JNetLib
+** Copyright (C) 2008 Cockos Inc
 ** Copyright (C) 2000-2001 Nullsoft, Inc.
 ** Author: Justin Frankel
 ** File: httpget.h - JNL interface for doing HTTP GETs.
@@ -44,46 +45,87 @@
 
 #include "connection.h"
 
-class JNL_HTTPGet
+#ifndef JNL_NO_DEFINE_INTERFACES
+  class JNL_IHTTPGet
+  {
+    public:
+
+      virtual ~JNL_IHTTPGet() { }
+
+      virtual void addheader(const char *header)=0;
+
+      virtual void connect(const char *url, int ver=0, const char *requestmethod="GET")=0;
+
+      virtual int run()=0; // returns: 0 if all is OK. -1 if error (call geterrorstr()). 1 if connection closed.
+
+      virtual int   get_status()=0; // returns 0 if connecting, 1 if reading headers, 
+                          // 2 if reading content, -1 if error.
+
+      virtual const char *getallheaders()=0; // double null terminated, null delimited list
+      virtual const char *getheader(const char *headername)=0;
+      virtual const char *getreply()=0;
+      virtual int   getreplycode()=0; // returns 0 if none yet, otherwise returns http reply code.
+
+      virtual const char *geterrorstr()=0;
+
+      virtual int bytes_available()=0;
+      virtual int get_bytes(char *buf, int len)=0;
+      virtual int peek_bytes(char *buf, int len)=0;
+
+      virtual int content_length()=0;
+
+      virtual JNL_IConnection *get_con()=0;
+  };
+  #define JNL_HTTPGet_PARENTDEF : public JNL_IHTTPGet
+#else
+  #define JNL_IHTTPGet JNL_HTTPGet
+  #define JNL_HTTPGet_PARENTDEF
+#endif
+
+#ifndef JNL_NO_IMPLEMENTATION
+
+class JNL_HTTPGet JNL_HTTPGet_PARENTDEF
 {
   public:
-    JNL_HTTPGet(JNL_AsyncDNS *dns=JNL_CONNECTION_AUTODNS, int recvbufsize=16384, char *proxy=NULL);
+    JNL_HTTPGet(JNL_IAsyncDNS *dns=JNL_CONNECTION_AUTODNS, int recvbufsize=16384, char *proxy=NULL);
     ~JNL_HTTPGet();
 
     void addheader(const char *header);
 
-    void connect(const char *url, int ver=0, char *requestmethod="GET");
+    void connect(const char *url, int ver=0, const char *requestmethod="GET");
 
     int run(); // returns: 0 if all is OK. -1 if error (call geterrorstr()). 1 if connection closed.
 
     int   get_status(); // returns 0 if connecting, 1 if reading headers, 
                         // 2 if reading content, -1 if error.
 
-    char *getallheaders(); // double null terminated, null delimited list
-    char *getheader(char *headername);
-    char *getreply() { return m_reply; }
+    const char *getallheaders(); // double null terminated, null delimited list
+    const char *getheader(const char *headername);
+    const char *getreply() { return m_reply; }
     int   getreplycode(); // returns 0 if none yet, otherwise returns http reply code.
 
-    char *geterrorstr() { return m_errstr;}
+    const char *geterrorstr() { return m_errstr;}
 
     int bytes_available();
     int get_bytes(char *buf, int len);
     int peek_bytes(char *buf, int len);
 
-    int content_length() { char *p=getheader("content-length"); if (p) return atoi(p); return 0; }
+    int content_length() { const char *p=getheader("content-length"); if (p) return atoi(p); return 0; }
 
-    JNL_Connection *get_con() { return m_con; }
+    JNL_IConnection *get_con() { return m_con; }
+
+
+
+    static void do_parse_url(char *url, char **host, int *port, char **req, char **lp); // url gets thrashed, and host/req/lp are freed/allocated
+    static void do_encode_mimestr(char *in, char *out);
 
   protected:
     void reinit();
     void deinit();
-    void seterrstr(char *str) { if (m_errstr) free(m_errstr); m_errstr=(char*)malloc(strlen(str)+1); strcpy(m_errstr,str); }
+    void seterrstr(const char *str) { if (m_errstr) free(m_errstr); m_errstr=(char*)malloc(strlen(str)+1); strcpy(m_errstr,str); }
 
-    void do_parse_url(char *url, char **host, int *port, char **req, char **lp);
-    void do_encode_mimestr(char *in, char *out);
-
-    JNL_AsyncDNS *m_dns;
-    JNL_Connection *m_con;
+    JNL_IAsyncDNS *m_dns;
+    JNL_IConnection *m_con;
     int m_recvbufsize;
 
     int m_http_state;
@@ -105,5 +147,6 @@ class JNL_HTTPGet
 
     char *m_errstr;
 };
+#endif
 
 #endif // _HTTPGET_H_

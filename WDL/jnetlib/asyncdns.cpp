@@ -1,5 +1,6 @@
 /*
 ** JNetLib
+** Copyright (C) 2008 Cockos Inc
 ** Copyright (C) 2000-2001 Nullsoft, Inc.
 ** Author: Justin Frankel
 ** File: asyncdns.cpp - JNL portable asynchronous DNS implementation
@@ -9,6 +10,9 @@
 #include "netinc.h"
 #include "util.h"
 #include "asyncdns.h"
+#ifdef _WIN32
+#include <process.h>
+#endif
 
 JNL_AsyncDNS::JNL_AsyncDNS(int max_cache_entries)
 {
@@ -16,7 +20,8 @@ JNL_AsyncDNS::JNL_AsyncDNS(int max_cache_entries)
   m_thread=0;
   m_cache_size=max_cache_entries;
   m_cache=(cache_entry *)::malloc(sizeof(cache_entry)*m_cache_size);
-  memset(m_cache,0,sizeof(cache_entry)*m_cache_size);
+  if (m_cache) memset(m_cache,0,sizeof(cache_entry)*m_cache_size);
+  else m_cache_size = 0;
 }
 
 JNL_AsyncDNS::~JNL_AsyncDNS()
@@ -42,7 +47,7 @@ JNL_AsyncDNS::~JNL_AsyncDNS()
 }
 
 #ifdef _WIN32
-unsigned long WINAPI JNL_AsyncDNS::_threadfunc(LPVOID _d)
+unsigned WINAPI JNL_AsyncDNS::_threadfunc(void *_d)
 #else
 unsigned int JNL_AsyncDNS::_threadfunc(void *_d)
 #endif
@@ -106,11 +111,11 @@ unsigned int JNL_AsyncDNS::_threadfunc(void *_d)
   return 0;
 }
 
-int JNL_AsyncDNS::resolve(char *hostname, unsigned long *addr)
+int JNL_AsyncDNS::resolve(const char *hostname, unsigned int *addr)
 {
   // return 0 on success, 1 on wait, -1 on unresolvable
   int x;
-  unsigned long ip=inet_addr(hostname);
+  unsigned int ip=inet_addr(hostname);
   if (ip != INADDR_NONE) 
   {
     *addr=ip;
@@ -120,7 +125,7 @@ int JNL_AsyncDNS::resolve(char *hostname, unsigned long *addr)
 
   for (x = 0; x < m_cache_size; x ++)
   {
-    if (!strcasecmp(m_cache[x].hostname,hostname) && m_cache[x].mode==0)
+    if (!stricmp(m_cache[x].hostname,hostname) && m_cache[x].mode==0)
     {
       m_cache[x].last_used=time(NULL);
       if (m_cache[x].resolved)
@@ -129,8 +134,6 @@ int JNL_AsyncDNS::resolve(char *hostname, unsigned long *addr)
         {
           return -1;
         }
-        struct in_addr in;
-        in.s_addr=m_cache[x].addr;
         *addr=m_cache[x].addr;
         return 0;
       }
@@ -169,7 +172,7 @@ int JNL_AsyncDNS::resolve(char *hostname, unsigned long *addr)
 #endif
 }
 
-int JNL_AsyncDNS::reverse(unsigned long addr, char *hostname)
+int JNL_AsyncDNS::reverse(unsigned int addr, char *hostname)
 {
   // return 0 on success, 1 on wait, -1 on unresolvable
   int x;
@@ -240,9 +243,9 @@ void JNL_AsyncDNS::makesurethreadisrunning(void)
       WaitForSingleObject(m_thread,INFINITE);
       CloseHandle(m_thread);
     }
-    DWORD id;
+    unsigned id;
     m_thread_kill=0;
-    m_thread=CreateThread(NULL,0,_threadfunc,(LPVOID)this,0,&id);
+    m_thread=(HANDLE)_beginthreadex(NULL,0,_threadfunc,(void *)this,0,&id);
     if (!m_thread)
     {
   #else

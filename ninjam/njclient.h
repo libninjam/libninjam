@@ -66,17 +66,14 @@
 #endif
 #include <stdio.h>
 #include <time.h>
-#include <WDL/string.h>
-#include <WDL/ptrlist.h>
-#include <WDL/jnetlib/jnetlib.h>
-#include <WDL/sha.h>
-#include <WDL/rng.h>
-#include <WDL/mutex.h>
+#include "../WDL/wdlstring.h"
+#include "../WDL/ptrlist.h"
+#include "../WDL/jnetlib/jnetlib.h"
+#include "../WDL/sha.h"
+#include "../WDL/rng.h"
+#include "../WDL/mutex.h"
 
-#include <WDL/wavwrite.h>
-
-#include <set>
-#include <string>
+#include "../WDL/wavwrite.h"
 
 #include "netmsg.h"
 
@@ -84,9 +81,11 @@
 class I_NJEncoder;
 class RemoteDownload;
 class RemoteUser;
+class RemoteUser_Channel;
 class Local_Channel;
 class DecodeState;
 class BufferQueue;
+class DecodeMediaBuffer;
 
 // #define NJCLIENT_NO_XMIT_SUPPORT // might want to do this for njcast :)
 //  it also removes mixed ogg writing support
@@ -98,7 +97,7 @@ public:
   NJClient();
   ~NJClient();
 
-  void Connect(const char *host, const char *user, const char *pass);
+  void Connect(char *host, char *user, char *pass);
   void Disconnect();
 
   // call Run() from your main (UI) thread
@@ -108,34 +107,31 @@ public:
 
   int IsAudioRunning() { return m_audio_enable; }
   // call AudioProc, (and only AudioProc) from your audio thread
-  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate); // len is number of sample pairs or samples
+  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, bool justmonitor=false, bool isPlaying=true, bool isSeek=false, double cursessionpos=-1.0); // len is number of sample pairs or samples
 
 
   // basic configuration
   int   config_autosubscribe;
-  std::set<std::string> config_autosubscribe_userlist;
   int   config_savelocalaudio; // set 1 to save compressed files, set to 2 to save .wav files as well. 
                                 // -1 makes it try to delete the remote .oggs as soon as possible
 
   float config_metronome,config_metronome_pan; // volume of metronome
   bool  config_metronome_mute;
-  int	config_metronome_channel;
-  bool config_metronome_stereoout;
   float config_mastervolume,config_masterpan; // master volume
   bool  config_mastermute;
   int   config_debug_level; 
   int   config_play_prebuffer; // -1 means play instantly, 0 means play when full file is there, otherwise refers to how many
                                // bytes of compressed source to have before play. the default value is 4096.
 
-  float GetOutputPeak();
+  float GetOutputPeak(int ch=-1);
 
   enum { NJC_STATUS_DISCONNECTED=-3,NJC_STATUS_INVALIDAUTH=-2, NJC_STATUS_CANTCONNECT=-1, NJC_STATUS_OK=0, NJC_STATUS_PRECONNECT};
   int GetStatus();
 
-  void SetWorkDir(const char *path);
+  void SetWorkDir(char *path);
   char *GetWorkDir() { return m_workdir.Get(); }
 
-  char *GetUserName() { return m_user.Get(); }
+  char *GetUser() { return m_user.Get(); }
   char *GetHostName() { return m_host.Get(); }
 
   float GetActualBPM() { return (float) m_active_bpm; }
@@ -149,48 +145,38 @@ public:
   char *GetUserState(int idx, float *vol=0, float *pan=0, bool *mute=0);
   void SetUserState(int idx, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute);
 
-  float GetUserChannelPeak(int useridx, int channelidx);
-  char *GetUserChannelState(int useridx,
-			    int channelidx,
-			    bool *sub=0,
-			    float *vol=0,
-			    float *pan=0,
-			    bool *mute=0,
-			    bool *solo=0,
-			    int *outch=0,
-			    bool *stereoout=0);
-  void SetUserChannelState(int useridx, int channelidx,
-			   bool setsub, bool sub,
-			   bool setvol, float vol,
-			   bool setpan, float pan,
-			   bool setmute, bool mute,
-			   bool setsolo, bool solo,
-			   bool setoutch, int outch,
-			   bool setstereout, bool stereoout);
+  float GetUserChannelPeak(int useridx, int channelidx, int whichch=-1);
+  double GetUserSessionPos(int useridx, time_t *lastupdatetime, double *maxlen);
+  char *GetUserChannelState(int useridx, int channelidx, bool *sub=0, float *vol=0, float *pan=0, bool *mute=0, bool *solo=0, int *outchannel=0, int *flags=0);
+  void SetUserChannelState(int useridx, int channelidx, bool setsub, bool sub, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo, bool setoutch=false, int outchannel=0);
   int EnumUserChannels(int useridx, int i); // returns <0 if out of channels. start with i=0, and go upwards
 
   int GetMaxLocalChannels() { return m_max_localch; }
   void DeleteLocalChannel(int ch);
   int EnumLocalChannels(int i);
-  float GetLocalChannelPeak(int ch);
+  float GetLocalChannelPeak(int ch, int whichch=-1);
   void SetLocalChannelProcessor(int ch, void (*cbf)(float *, int ns, void *), void *inst);
   void GetLocalChannelProcessor(int ch, void **func, void **inst);
-  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast);
-  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast);
+  void SetLocalChannelInfo(int ch, const char *name, bool setsrcch, int srcch, bool setbitrate, int bitrate, bool setbcast, bool broadcast, bool setoutch=false, int outch=0, bool setflags=false, int flags=0);
+  char *GetLocalChannelInfo(int ch, int *srcch, int *bitrate, bool *broadcast, int *outch=0, int *flags=0);
   void SetLocalChannelMonitoring(int ch, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute, bool setsolo, bool solo);
   int GetLocalChannelMonitoring(int ch, float *vol, float *pan, bool *mute, bool *solo); // 0 on success
   void NotifyServerOfChannelChange(); // call after any SetLocalChannel* that occur after initial connect
 
+  void SetMetronomeChannel(int chidx) { m_metro_chidx=chidx; } // chidx&255 is stereo pair index, add 1024 for mono only
+  void SetRemoteChannelOffset(int offs) { m_remote_chanoffs = offs; }
+  void SetLocalChannelOffset(int offs) { m_local_chanoffs = offs; }
+
   int IsASoloActive() { return m_issoloactive; }
 
-  void SetLogFile(const char *name=NULL);
+  void SetLogFile(char *name=NULL);
 
   void SetOggOutFile(FILE *fp, int srate, int nch, int bitrate=128);
   WaveWriter *waveWrite;
 
 
-  int LicenseAgreement_User32;
-  int (*LicenseAgreementCallback)(int user32, char *licensetext); // return TRUE if user accepts
+  void *LicenseAgreement_User;
+  int (*LicenseAgreementCallback)(void *userData, const char *licensetext); // return TRUE if user accepts
 
 
   // messages you can send:
@@ -205,28 +191,36 @@ public:
   // usernames are not case sensitive, but message names ARE.
 
   // note that nparms is the MAX number of parms, you still can get NULL parms entries in there (though rarely)
-  void (*ChatMessage_Callback)(int user32, NJClient *inst, const char **parms, int nparms); 
-  int ChatMessage_User32;
+  void (*ChatMessage_Callback)(void *userData, NJClient *inst, const char **parms, int nparms); 
+  void *ChatMessage_User;
 
 
   // set these if you want to mix multiple channels into the output channel
   // return 0 if you want the default behavior
-  int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
-  int ChannelMixer_User32;
+  int (*ChannelMixer)(void *userData, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
+  void *ChannelMixer_User;
 
+  WDL_Mutex m_remotechannel_rd_mutex;
+
+  bool is_likely_lobby() const {
+    return !m_max_localch && !m_remoteusers.GetSize();
+  }
+
+  int GetSampleRate() const { return m_srate; }
 
 protected:
-  double output_peaklevel;
+  double output_peaklevel[2];
 
   void _reinit();
 
   void makeFilenameFromGuid(WDL_String *s, unsigned char *guid);
 
   void updateBPMinfo(int bpm, int bpi);
-  void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor=0);
+  void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor, bool isPlaying, bool isSeek, double cursessionpos);
   void on_new_interval();
+  void writeUserChanLog(const char *lbl, RemoteUser *user, RemoteUser_Channel *chan, int chanidx);
 
-  void writeLog(char *fmt, ...);
+  void writeLog(const char *fmt, ...);
 
   WDL_String m_errstr;
 
@@ -258,13 +252,17 @@ protected:
   int m_interval_pos, m_metronome_state, m_metronome_tmp,m_metronome_interval;
   double m_metronome_pos;
 
-  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc=0);
+  int m_metro_chidx, m_remote_chanoffs, m_local_chanoffs;
+
+  DecodeState *start_decode(unsigned char *guid, int chanflags, unsigned int fourcc, DecodeMediaBuffer *decbuf);
 
   BufferQueue *m_wavebq;
 
   WDL_PtrList<Local_Channel> m_locchannels;
 
-  void mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay);
+  void mixInChannel(RemoteUser *user, int chanidx,
+                    bool muted, float vol, float pan, float **outbuf, int out_channel, 
+                    int len, int srate, int outnch, int offs, double vudecay, bool isPlaying, bool isSeek, double playPos);
 
   WDL_Mutex m_users_cs, m_locchan_cs, m_log_cs, m_misc_cs;
   Net_Connection *m_netcon;

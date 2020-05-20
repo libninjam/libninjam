@@ -1,42 +1,23 @@
 /*
     WDL - sha.cpp
-    Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2005 and later, Cockos Incorporated
 
-    WDL is dual-licensed. You may modify and/or distribute WDL under either of 
-    the following  licenses:
-    
-      This software is provided 'as-is', without any express or implied
-      warranty.  In no event will the authors be held liable for any damages
-      arising from the use of this software.
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
 
-      Permission is granted to anyone to use this software for any purpose,
-      including commercial applications, and to alter it and redistribute it
-      freely, subject to the following restrictions:
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
 
-      1. The origin of this software must not be misrepresented; you must not
-         claim that you wrote the original software. If you use this software
-         in a product, an acknowledgment in the product documentation would be
-         appreciated but is not required.
-      2. Altered source versions must be plainly marked as such, and must not be
-         misrepresented as being the original software.
-      3. This notice may not be removed or altered from any source distribution.
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
       
-
-    or:
-
-      WDL is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 2 of the License, or
-      (at your option) any later version.
-
-      WDL is distributed in the hope that it will be useful,
-      but WITHOUT ANY WARRANTY; without even the implied warranty of
-      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      GNU General Public License for more details.
-
-      You should have received a copy of the GNU General Public License
-      along with WDL; if not, write to the Free Software
-      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
@@ -59,17 +40,17 @@ void WDL_SHA1::reset()
 {
   lenW = 0;
   size[0] = size[1] = 0;
-  H[0] = 0x67452301L;
-  H[1] = 0xefcdab89L;
-  H[2] = 0x98badcfeL;
-  H[3] = 0x10325476L;
-  H[4] = 0xc3d2e1f0L;
+  H[0] = 0x67452301;
+  H[1] = 0xefcdab89;
+  H[2] = 0x98badcfe;
+  H[3] = 0x10325476;
+  H[4] = 0xc3d2e1f0;
   int x;
-  for (x = 0; x < sizeof(W)/sizeof(W[0]); x ++) W[x]=0;
+  for (x = 0; x < (int)(sizeof(W)/sizeof(W[0])); x ++) W[x]=0;
 }
 
 
-#define SHA_ROTL(X,n) ((((X)&0xffffffffL) << (n)) | (((X)&0xffffffffL) >> (32-(n))))
+#define SHA_ROTL(X,n) ((((X)&0xffffffff) << (n)) | (((X)&0xffffffff) >> (32-(n))))
 #define SHUFFLE() E = D; D = C; C = SHA_ROTL(B, 30); B = A; A = TEMP
 
 void WDL_SHA1::add(const void *data, int datalen)
@@ -78,38 +59,38 @@ void WDL_SHA1::add(const void *data, int datalen)
   for (i = 0; i < datalen; i++) 
   {
     W[lenW / 4] <<= 8;
-    W[lenW / 4] |= (unsigned long)((const unsigned char *)data)[i];
+    W[lenW / 4] |= (unsigned int)((const unsigned char *)data)[i];
     if (!(++lenW & 63)) 
     {
       int t;
 
-      unsigned long A = H[0];
-      unsigned long B = H[1];
-      unsigned long C = H[2];
-      unsigned long D = H[3];
-      unsigned long E = H[4];
+      unsigned int A = H[0];
+      unsigned int B = H[1];
+      unsigned int C = H[2];
+      unsigned int D = H[3];
+      unsigned int E = H[4];
 
 
       for (t = 16; t < 80; t++) W[t] = SHA_ROTL(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
 
       for (t = 0; t < 20; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x5a827999L + (((C^D)&B)^D);
+        unsigned int TEMP = SHA_ROTL(A,5) + E + W[t] + 0x5a827999 + (((C^D)&B)^D);
         SHUFFLE();
       }
       for (; t < 40; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x6ed9eba1L + (B^C^D);
+        unsigned int TEMP = SHA_ROTL(A,5) + E + W[t] + 0x6ed9eba1 + (B^C^D);
         SHUFFLE();
       }
       for (; t < 60; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x8f1bbcdcL + ((B&C)|(D&(B|C)));
+        unsigned int TEMP = SHA_ROTL(A,5) + E + W[t] + 0x8f1bbcdc + ((B&C)|(D&(B|C)));
         SHUFFLE();
       }
       for (; t < 80; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0xca62c1d6L + (B^C^D);
+        unsigned int TEMP = SHA_ROTL(A,5) + E + W[t] + 0xca62c1d6 + (B^C^D);
         SHUFFLE();
       }
 

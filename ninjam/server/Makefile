@@ -1,8 +1,4 @@
-DESTDIR=
-PREFIX=/usr
-INSTALLDIR=$(DESTDIR)$(PREFIX)
-
-CFLAGS =  -O2 -s -Wall -I../..
+CFLAGS = -O2 -Wall -Wno-reorder
 
 ifdef MAC
 CFLAGS += -D_MAC
@@ -14,17 +10,23 @@ CC=gcc
 CXX=g++
 CXXFLAGS = $(CFLAGS)
 
-OBJS = usercon.o
+OBJS = ../../WDL/jnetlib/asyncdns.o
+OBJS += ../../WDL/jnetlib/connection.o
+OBJS += ../../WDL/jnetlib/listen.o
+OBJS += ../../WDL/jnetlib/util.o
+OBJS += ../../WDL/jnetlib/httpget.o
+OBJS += ../../WDL/rng.o
+OBJS += ../../WDL/sha.o
+OBJS += ../mpb.o
+OBJS += ../netmsg.o
+OBJS += usercon.o
 OBJS += ninjamsrv.o
+
 
 default: ninjamsrv
 
 ninjamsrv: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o ninjamsrv $(OBJS) -L../.. -lninjam-common
+	$(CXX) $(CXXFLAGS) -s -o ninjamsrv $(OBJS)
 
 clean:
 	-rm $(OBJS) ninjamsrv
-
-install: ninjamsrv
-	mkdir -p $(INSTALLDIR)/bin
-	install ninjamsrv $(INSTALLDIR)/bin
