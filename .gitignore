@@ -1,0 +1,7 @@
+*.a
+*.o
+*.pc
+*.so
+
+ninjam/cursesclient/cninjam
+ninjam/server/ninjamsrv
