@@ -1,14 +1,16 @@
-# libninjam
+# libninjam - common base library for NINJAM servers and clients
 
-common base library for compatible ninjam servers and clients
+__libninjam__ is a set of development libraries for creating custom NINJAM clients, compatible with standard NINJAM servers, and for extending the NINJAM protocol with new features. NINJAM clients and servers using this library, ensure compatibility with the conventional NINJAM ecosystem and gain new features, merely by upgrading the library. Through collaboration among the various NINJAM software developers, this allows the NINJAM community to advance the state of the art, without imposing compatibility conflicts upon users, and reducing the over-all work-load of developers.
 
 
-## commit history
+#### NINJAM clients based on libninjam:
 
-this git repo was converted from the 'libninjam' sourceforge SVN repo (```http://svn.code.sf.net/p/gninjam/code/libninjam```), originally maintained by tobias gehrig
+  * cNinJam - cross-platform text-mode NINJAM client (nCurses)
+  * [gNinJam][gninjam] - graphical NINJAM client for *nixes (GTK)
+  * [LinJam ][linjam] - cross-platform graphical NINJAM client (JUCE)
+  * ....
 
-commit '314ad289f9c91d364603fb06cb25eb856a75497e' (tag 'original-svn') represents the final SVN check-in (rev 121) on the 'libninjam' sourceforge SVN repo 'trunk'
 
-commit '02d6b61b1f369d674e9fbb893ce55199716420f7' (tag 'original-exp-svn') represents the final SVN check-in on the experimental 'libninjam+session-mode+voice-chat' SVN branch
-
-those, and all preceding commits represent the original SVN history
+[gninjam]:      https://github.com/libninjam/gninjam/
+[linjam]:       https://github.com/linjam/linjam/
+[libninjam-sf]: http://svn.code.sf.net/p/gninjam/code/libninjam
