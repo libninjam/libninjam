@@ -31,8 +31,11 @@
 #include "../WDL/pcmfmtcvt.h"
 #include "../WDL/wavwrite.h"
 #include "../WDL/wdlcstring.h"
-
-#include "../WDL/win32_utf8.h"
+#ifdef _WIN32
+#  include "../WDL/win32_utf8.h"
+#else
+#  define fopenUTF8 fopen
+#endif
 
 #define NJ_ENCODER_FMT_TYPE MAKE_NJ_FOURCC('O','G','G','v')
 
