@@ -1,6 +1,22 @@
 libninjam (0.7.1) UNRELEASED; urgency=low
 
+  [Bill Auger]
   * bump version
+
+  [Olivier Humbert]
+  * update debian/control:
+    - update and add dependancies
+    - add a homepage field
+    - remove the "(= ${Source-Version})"
+    - one item per line (easier to read)
+  * update debian/ninjam-client.docs: fix a targetted file
+  * debian/libninjam-common-dev.install: update to install a missing file
+  * debian/copyright: complete rewrite to match current standards
+  * debian/watch: create file
+  * debian/source/format: create file
+  * debian/README.Debian: delete file (uneeded since empty)
+  * debian/compat: update from 5 to 9
+  * debian/dirs: remove one empty uneeded line
 
  -- bill-auger <bill-auger@programmer.net>  Thu, 14 May 2020 04:20:42 -0420
 
