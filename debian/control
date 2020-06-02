@@ -2,13 +2,20 @@ Source: ninjam
 Section: web
 Priority: optional
 Maintainer: Tobias Gehrig <tobias@gehrignet.de>
-Build-Depends: debhelper (>= 5), libvorbis-dev, libjack-dev, libasound2-dev, libncurses5-dev
+Build-Depends:
+ debhelper (>= 9),
+ libasound2-dev,
+ libjack-jackd2-dev | libjack-dev,
+ libncurses5-dev,
+ libogg-dev,
+ libvorbis-dev,
 Standards-Version: 3.7.2
+Homepage: https://github.com/libninjam/libninjam
 
 Package: libninjam-common-dev
 Section: devel
 Architecture: any
-Depends: libninjam-common (= ${Source-Version})
+Depends: libninjam-common
 Description: Development files for libninjam-common
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
@@ -16,7 +23,9 @@ Description: Development files for libninjam-common
 
 Package: libninjam-common
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Realtime Music Collaboration Software (Common Library)
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
@@ -25,7 +34,9 @@ Description: Realtime Music Collaboration Software (Common Library)
 Package: libninjam-client-dev
 Section: devel
 Architecture: any
-Depends: libninjam-client (= ${Source-Version}), libninjam-common-dev (= ${Source-Version})
+Depends:
+ libninjam-client,
+ libninjam-common-dev
 Description: Development files for libninjam-client
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
@@ -33,7 +44,10 @@ Description: Development files for libninjam-client
 
 Package: libninjam-client
 Architecture: any
-Depends: libninjam-common (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ libninjam-common,
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Realtime Music Collaboration Software (Client Library)
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
@@ -41,7 +55,10 @@ Description: Realtime Music Collaboration Software (Client Library)
 
 Package: ninjam-server
 Architecture: any
-Depends: libninjam-common (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ libninjam-common,
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Realtime Music Collaboration Software (Server)
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
@@ -49,7 +66,10 @@ Description: Realtime Music Collaboration Software (Server)
 
 Package: ninjam-client
 Architecture: any
-Depends: libninjam-client (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ libninjam-client,
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Realtime Music Collaboration Software (Client)
  NINJAM is a program to allow people to make real music together
  via the Internet. Every participant can hear every other participant.
