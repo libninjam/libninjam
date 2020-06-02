@@ -4,3 +4,4 @@ usr/include/libninjam/WDL/*.h
 usr/include/libninjam/WDL/jnetlib/*.h
 usr/include/libninjam/ninjam/mpb.h
 usr/include/libninjam/ninjam/netmsg.h
+usr/include/libninjam/ninjam/constants.h
