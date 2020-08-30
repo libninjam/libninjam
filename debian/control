@@ -1,5 +1,5 @@
 Source: ninjam
-Section: web
+Section: net
 Priority: optional
 Maintainer: Tobias Gehrig <tobias@gehrignet.de>
 Build-Depends:
@@ -22,6 +22,7 @@ Description: Development files for libninjam-common
  Each user can also tweak their personal mix to his or her liking.
 
 Package: libninjam-common
+Section: libs
 Architecture: any
 Depends:
  ${shlibs:Depends},
@@ -43,6 +44,7 @@ Description: Development files for libninjam-client
  Each user can also tweak their personal mix to his or her liking.
 
 Package: libninjam-client
+Section: libs
 Architecture: any
 Depends:
  libninjam-common,
@@ -54,6 +56,7 @@ Description: Realtime Music Collaboration Software (Client Library)
  Each user can also tweak their personal mix to his or her liking.
 
 Package: ninjam-server
+Section: net
 Architecture: any
 Depends:
  libninjam-common,
@@ -65,6 +68,7 @@ Description: Realtime Music Collaboration Software (Server)
  Each user can also tweak their personal mix to his or her liking.
 
 Package: ninjam-client
+Section: net
 Architecture: any
 Depends:
  libninjam-client,
